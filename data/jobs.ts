@@ -1,8 +1,17 @@
 import { Job } from "@/types/job";
 
-export const jobs: Job[] = [
+// Helper to generate a URL-friendly slug
+function generateSlug(title: string, company: string): string {
+  const base = `${title} ${company}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+  return base;
+}
+
+// Raw job data without IDs
+const rawJobs = [
   {
-    id: "job-1",
     title: "Software Engineering Intern",
     company: "Google",
     companyInitial: "G",
@@ -27,7 +36,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-2",
     title: "Frontend Developer Co-op",
     company: "Vercel",
     companyInitial: "V",
@@ -52,7 +60,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-3",
     title: "Data Science Intern",
     company: "Stripe",
     companyInitial: "S",
@@ -77,7 +84,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-4",
     title: "Backend Engineer (New Grad)",
     company: "Discord",
     companyInitial: "D",
@@ -102,7 +108,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-5",
     title: "Cloud Infrastructure Intern",
     company: "Amazon Web Services",
     companyInitial: "A",
@@ -127,7 +132,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-6",
     title: "Mobile App Developer Intern",
     company: "Spotify",
     companyInitial: "S",
@@ -152,7 +156,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-7",
     title: "Security Engineering Intern",
     company: "Cloudflare",
     companyInitial: "C",
@@ -177,7 +180,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-8",
     title: "Systems Software Co-op",
     company: "NVIDIA",
     companyInitial: "N",
@@ -202,7 +204,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-9",
     title: "Full Stack Developer Intern",
     company: "Airbnb",
     companyInitial: "A",
@@ -227,7 +228,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-10",
     title: "Machine Learning Intern",
     company: "OpenAI",
     companyInitial: "O",
@@ -252,7 +252,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-11",
     title: "Site Reliability Engineer (New Grad)",
     company: "Datadog",
     companyInitial: "D",
@@ -277,7 +276,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-12",
     title: "Game Development Intern",
     company: "Electronic Arts",
     companyInitial: "E",
@@ -302,7 +300,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-13",
     title: "Product Engineer Summer Analyst",
     company: "Palantir",
     companyInitial: "P",
@@ -327,7 +324,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-14",
     title: "UI/UX Developer Co-op",
     company: "Figma",
     companyInitial: "F",
@@ -352,7 +348,6 @@ export const jobs: Job[] = [
     ],
   },
   {
-    id: "job-15",
     title: "Embedded Systems Intern",
     company: "Tesla",
     companyInitial: "T",
@@ -377,3 +372,27 @@ export const jobs: Job[] = [
     ],
   },
 ];
+
+// Dynamically generate unique IDs based on title and company
+export const jobs: Job[] = (() => {
+  const idCounts = new Map<string, number>();
+
+  return rawJobs.map((job) => {
+    const baseSlug = generateSlug(job.title, job.company);
+    let finalId = baseSlug;
+
+    // Handle duplicates by appending a counter
+    if (idCounts.has(baseSlug)) {
+      const count = idCounts.get(baseSlug)! + 1;
+      idCounts.set(baseSlug, count);
+      finalId = `${baseSlug}-${count}`;
+    } else {
+      idCounts.set(baseSlug, 1);
+    }
+
+    return {
+      id: finalId,
+      ...job,
+    };
+  });
+})();
