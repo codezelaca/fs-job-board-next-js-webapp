@@ -1,13 +1,18 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-purple-500/10 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-white font-bold transition-transform group-hover:scale-105 shadow-md shadow-purple-500/20">
-            C
-          </div>
+          <Image
+            src="/cca-logo.png"
+            alt="CCA Job Board Logo"
+            width={48}
+            height={48}
+            className="w-12 h-12 transition-transform group-hover:scale-105 object-contain"
+          />
           <span className="text-xl font-bold tracking-tight text-foreground transition-colors group-hover:text-purple-600">
             CCA Job Board
           </span>
