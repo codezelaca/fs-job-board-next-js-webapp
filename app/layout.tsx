@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Board for Students in the Software Field",
-  description: "A job board for students in the software field",
+  title: "CCA Job Board | Internships & Entry-Level Software Roles",
+  description:
+    "A specialized job board for students in the software engineering field to find internships, junior roles, and career resources.",
 };
 
 export default function RootLayout({
@@ -25,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col font-sans`}
       >
-        {children}
+        <Header />
+        <main className="flex-grow flex flex-col">{children}</main>
+        <Footer />
       </body>
     </html>
   );
