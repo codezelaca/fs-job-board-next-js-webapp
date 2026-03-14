@@ -8,7 +8,23 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export default function Home() {
+import { jobs } from "@/data/jobs";
+
+type Props = {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function Home(props: Props) {
+  const searchParams = await props.searchParams;
+  const pageStr = searchParams?.page;
+  const currentPage = typeof pageStr === "string" ? parseInt(pageStr, 10) : 1;
+  const ITEMS_PER_PAGE = 5;
+  const totalPages = Math.ceil(jobs.length / ITEMS_PER_PAGE);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, jobs.length);
+  const paginatedJobs = jobs.slice(startIndex, endIndex);
+
   return (
     <div className="flex flex-col flex-1 w-full relative overflow-hidden">
       {/* Background decoration */}
@@ -161,36 +177,45 @@ export default function Home() {
         </div>
 
         <div className="grid gap-4">
-          {[1, 2, 3].map((job) => (
+          {paginatedJobs.map((job) => (
             <div
-              key={job}
+              key={job.id}
               className="group flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl border border-purple-500/10 bg-background hover:border-purple-500/30 transition-all hover:shadow-md hover:shadow-purple-500/5 gap-6"
             >
               <div className="flex items-center gap-5">
                 <div className="w-16 h-16 rounded-xl bg-purple-50 dark:bg-purple-900/10 flex items-center justify-center border border-purple-500/10 shrink-0 shadow-sm shadow-purple-500/5">
                   <span className="font-bold text-xl text-purple-600">
-                    C{job}
+                    {job.companyInitial}
                   </span>
                 </div>
                 <div>
                   <h3 className="text-lg font-bold group-hover:text-purple-600 transition-colors">
-                    Software Engineering Intern
+                    {job.title}
                   </h3>
-                  <p className="text-foreground/60 mt-1">
-                    Tech Company {job} • Remote • Summer 2026
+                  <p className="text-foreground/60 mt-1 flex flex-wrap gap-1">
+                    <span>{job.company}</span>
+                    <span>•</span>
+                    <span>{job.location}</span>
+                    <span>•</span>
+                    <span>{job.term}</span>
                   </p>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     <span className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 ring-1 ring-inset ring-purple-700/10">
-                      React
+                      {job.type}
                     </span>
-                    <span className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 ring-1 ring-inset ring-purple-700/10">
-                      Node.js
-                    </span>
+                    {job.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 ring-1 ring-inset ring-purple-700/10"
+                      >
+                        {skill}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
               <Link
-                href={`/jobs/${job}`}
+                href={`/jobs/${job.id}`}
                 className="inline-flex h-10 items-center justify-center rounded-md bg-purple-50 dark:bg-purple-900/20 px-6 text-sm font-medium text-purple-700 dark:text-purple-300 transition-colors hover:bg-purple-100 dark:hover:bg-purple-900/40 w-full md:w-auto shrink-0 shadow-sm ring-1 ring-inset ring-purple-700/10"
               >
                 Apply Now
@@ -198,6 +223,30 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-10 flex justify-center gap-2">
+            {Array.from({ length: totalPages }).map((_, i) => {
+              const pageNum = i + 1;
+              const isActive = pageNum === currentPage;
+              return (
+                <Link
+                  key={pageNum}
+                  href={`/?page=${pageNum}`}
+                  scroll={false}
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-purple-600 bg-purple-600 text-white shadow-sm shadow-purple-500/20"
+                      : "border-purple-500/20 bg-background text-foreground hover:border-purple-500/50 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  }`}
+                >
+                  {pageNum}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* CTA Section */}
