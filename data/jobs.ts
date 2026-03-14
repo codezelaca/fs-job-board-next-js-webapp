@@ -11,6 +11,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["C++", "Python", "Go"],
     postedAt: "2026-03-01",
+    about:
+      "Join Google as a Software Engineering Intern and help build products that organize the world's information and make it universally accessible and useful. You'll work on core systems, infrastructure, or user-facing products depending on your team placement.",
+    responsibilities: [
+      "Write, test, and maintain robust and scalable code.",
+      "Collaborate with cross-functional teams to define, design, and ship new features.",
+      "Participate in code reviews to maintain high quality code standards.",
+      "Solve complex performance problems and architectural challenges.",
+    ],
+    requirements: [
+      "Currently pursuing a BS, MS, or PhD in Computer Science or related technical field.",
+      "Experience with one or more general purpose programming languages including: Java, C/C++, C#, Objective C, Python, JavaScript, or Go.",
+      "Experience working with data structures and algorithms.",
+      "Available to work full-time for a minimum of 12 weeks during the summer.",
+    ],
   },
   {
     id: "job-2",
@@ -22,6 +36,20 @@ export const jobs: Job[] = [
     term: "Fall 2025",
     skills: ["React", "Next.js", "TypeScript"],
     postedAt: "2026-03-05",
+    about:
+      "Vercel is the platform for frontend developers, providing the speed and reliability innovators need to create at the moment of inspiration. We're looking for passionate Frontend Developer Co-ops to help us build the next generation of web infrastructure.",
+    responsibilities: [
+      "Develop user-facing features using React and Next.js.",
+      "Build reusable components and front-end libraries for future use.",
+      "Optimize components for maximum performance across a vast array of web-capable devices and browsers.",
+      "Collaborate closely with designers and product managers.",
+    ],
+    requirements: [
+      "Currently enrolled in a Bachelor's degree program in Computer Science, HCI, or related field.",
+      "Strong proficiency in JavaScript, including DOM manipulation and the JavaScript object model.",
+      "Thorough understanding of React.js and its core principles.",
+      "Prior experience with React Native or Next.js is a plus.",
+    ],
   },
   {
     id: "job-3",
@@ -33,6 +61,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["SQL", "Python", "Machine Learning"],
     postedAt: "2026-03-10",
+    about:
+      "Stripe builds economic infrastructure for the internet. As a Data Science Intern, you will embed with a product or business team to help them make data-driven decisions. You will dive into our rich datasets to extract actionable insights.",
+    responsibilities: [
+      "Design, analyze, and interpret the results of A/B experiments.",
+      "Build predictive models to detect fraud, predict customer churn, or optimize matching.",
+      "Develop dashboards and visualizations to track key product metrics.",
+      "Communicate findings clearly to both technical and non-technical stakeholders.",
+    ],
+    requirements: [
+      "Pursuing a degree in Math, Statistics, Computer Science, Economics, or other quantitative field.",
+      "Proficiency in SQL and scripting languages (e.g., Python or R).",
+      "Familiarity with statistical inference and machine learning models.",
+      "Strong analytical and problem-solving skills.",
+    ],
   },
   {
     id: "job-4",
@@ -44,6 +86,20 @@ export const jobs: Job[] = [
     term: "Start 2026",
     skills: ["Rust", "Elixir", "PostgreSQL"],
     postedAt: "2026-03-12",
+    about:
+      "Discord is the easiest way to talk over voice, video, and text. We are looking for New Grad Backend Engineers to help us scale our systems to support hundreds of millions of concurrent users. You will work on highly distributed, real-time systems.",
+    responsibilities: [
+      "Design and implement scalable backend services.",
+      "Optimize database queries and data storage patterns.",
+      "Investigate and resolve performance bottlenecks in distributed systems.",
+      "Write high-quality, well-tested code.",
+    ],
+    requirements: [
+      "Degree in Computer Science or related field, graduating in late 2025 or 2026.",
+      "Experience with backend development in a systems language like Rust, Go, or C++.",
+      "Knowledge of distributed systems design and architecture.",
+      "Experience with relational databases like PostgreSQL.",
+    ],
   },
   {
     id: "job-5",
@@ -55,6 +111,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["AWS", "Linux", "Python"],
     postedAt: "2026-03-13",
+    about:
+      "AWS provides a highly reliable, scalable, low-cost infrastructure platform in the cloud that powers hundreds of thousands of businesses in 190 countries around the world. As an intern, you will build services that handle massive scale.",
+    responsibilities: [
+      "Develop automation scripts to manage infrastructure at scale.",
+      "Improve the reliability and observability of core AWS services.",
+      "Participate in operational readiness reviews and deployment pipelines.",
+      "Build internal tools to improve developer productivity.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science, Computer Engineering, or related field.",
+      "Experience with Linux / UNIX operating systems.",
+      "Proficiency in Python, Bash, or Go.",
+      "Basic understanding of cloud computing concepts and networking protocols.",
+    ],
   },
   {
     id: "job-6",
@@ -66,6 +136,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["Swift", "Kotlin", "React Native"],
     postedAt: "2026-02-28",
+    about:
+      "Spotify transformed music listening forever when we launched in 2008. We are looking for Mobile App Developer Interns who are passionate about building seamless audio experiences for millions of users on iOS and Android.",
+    responsibilities: [
+      "Build and maintain features in the Spotify mobile application.",
+      "Collaborate with designers to implement pixel-perfect user interfaces.",
+      "Optimize application performance for smooth audio playback and navigation.",
+      "Write unit and UI tests to ensure app stability.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science or equivalent.",
+      "Experience building native or cross-platform mobile apps (personal projects count!).",
+      "Familiarity with mobile UI/UX principles.",
+      "Passion for music and audio technology.",
+    ],
   },
   {
     id: "job-7",
@@ -77,6 +161,20 @@ export const jobs: Job[] = [
     term: "Fall 2025",
     skills: ["Network Security", "Go", "Rust"],
     postedAt: "2026-03-02",
+    about:
+      "Cloudflare's mission is to help build a better Internet. We are looking for Security Engineering Interns to help us protect our massive global network and the millions of web properties that rely on us from cyber attacks.",
+    responsibilities: [
+      "Develop tools to detect and mitigate DDoS attacks and vulnerability exploits.",
+      "Perform security code reviews and penetration testing of internal services.",
+      "Build infrastructure for secure key management and cryptography.",
+      "Analyze network traffic patterns to identify emerging threats.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science, Cybersecurity, or related field.",
+      "Understanding of web security fundamentals (e.g., OWASP Top 10, TLS/SSL).",
+      "Programming experience in Go, Rust, or C.",
+      "Experience with CTF competitions is a strong plus.",
+    ],
   },
   {
     id: "job-8",
@@ -88,6 +186,20 @@ export const jobs: Job[] = [
     term: "Spring 2026",
     skills: ["C", "C++", "CUDA"],
     postedAt: "2026-03-08",
+    about:
+      "NVIDIA is the pioneer of GPU-accelerated computing. As a Systems Software Co-op, you will work close to the hardware, optimizing software stacks that power AI, high-performance computing, and graphics applications.",
+    responsibilities: [
+      "Develop and optimize driver software for next-generation GPUs.",
+      "Implement and tune CUDA kernels for maximum performance.",
+      "Debug complex system-level issues across hardware and software boundaries.",
+      "Collaborate with hardware architects to influence future chip designs.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Engineering, Electrical Engineering, or Computer Science.",
+      "Exceptional C and C++ programming skills.",
+      "Deep understanding of computer architecture and operating systems fundamentals.",
+      "Prior experience with parallel programming or GPU architectures is preferred.",
+    ],
   },
   {
     id: "job-9",
@@ -99,6 +211,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["React", "Ruby on Rails", "GraphQL"],
     postedAt: "2026-03-09",
+    about:
+      "Airbnb connects people with unique homes and experiences around the world. As a Full Stack Intern, you will work across the stack to build features that make traveling and hosting easier and more delightful.",
+    responsibilities: [
+      "Design and implement end-to-end features spanning the frontend and backend.",
+      "Build robust API endpoints using Ruby on Rails and GraphQL.",
+      "Create modular, accessible UI components using React.",
+      "Write automated tests to ensure feature reliability.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science or related field.",
+      "Experience with web development frameworks (e.g., React, Rails, Django).",
+      "Understanding of RESTful or GraphQL API design.",
+      "Strong communication skills and user-centric mindset.",
+    ],
   },
   {
     id: "job-10",
@@ -110,6 +236,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["PyTorch", "Python", "Deep Learning"],
     postedAt: "2026-03-11",
+    about:
+      "OpenAI's mission is to ensure that artificial general intelligence benefits all of humanity. As an ML Intern, you will join our research or applied teams to train, evaluate, and deploy state-of-the-art generative models.",
+    responsibilities: [
+      "Train standard deep learning models on large-scale datasets.",
+      "Develop evaluations to benchmark model capabilities and safety.",
+      "Optimize inference performance for production deployment.",
+      "Read and implement ideas from recent ML literature.",
+    ],
+    requirements: [
+      "Pursuing a degree (BS, MS, or PhD) in CS, Math, Physics, or related quantitative field.",
+      "Strong programming skills in Python.",
+      "Experience with PyTorch or JAX.",
+      "Solid foundation in linear algebra, calculus, and probability.",
+    ],
   },
   {
     id: "job-11",
@@ -121,6 +261,20 @@ export const jobs: Job[] = [
     term: "Start 2026",
     skills: ["Kubernetes", "Docker", "Go"],
     postedAt: "2026-03-14",
+    about:
+      "Datadog is the monitoring and security platform for cloud applications. As an SRE New Grad, you will help design and operate the massive systems that ingest, process, and store trillions of data points per day.",
+    responsibilities: [
+      "Build automation to manage complex Kubernetes clusters.",
+      "Implement monitoring and alerting for critical infrastructure services.",
+      "Participate in incident response and post-mortem analysis.",
+      "Contribute to internal open-source tools for provisioning and deployment.",
+    ],
+    requirements: [
+      "Degree in Computer Science or related field, graduating in late 2025 or 2026.",
+      "Experience with containerization (Docker) and orchestration (Kubernetes).",
+      "Programming experience in Go, Python, or Ruby.",
+      "Understanding of distributed systems principles.",
+    ],
   },
   {
     id: "job-12",
@@ -132,6 +286,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["C++", "Unreal Engine", "Math"],
     postedAt: "2026-02-20",
+    about:
+      "EA creates games that inspire the world to play. As a Game Dev Intern studio in Orlando, you will work on core gameplay systems, rendering, or AI for our major AAA franchises.",
+    responsibilities: [
+      "Implement gameplay mechanics and systems in C++.",
+      "Optimize game performance for console and PC platforms.",
+      "Collaborate with designers and artists to realize their vision.",
+      "Debug and fix issues in complex, large-scale codebases.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science, Game Engineering, or equivalent.",
+      "Strong C++ programming skills.",
+      "Solid mathematics foundation (linear algebra, 3D geometry).",
+      "Experience with game engines (Unreal, Unity) or custom engine development.",
+    ],
   },
   {
     id: "job-13",
@@ -143,6 +311,20 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["React", "Java", "TypeScript"],
     postedAt: "2026-02-25",
+    about:
+      "Palantir builds software that empowers organizations to effectively integrate their data, decisions, and operations. As a Product Engineer, you'll develop the platforms that our customers use to solve their most critical problems.",
+    responsibilities: [
+      "Build highly interactive and performant web applications.",
+      "Develop scalable backend services for data processing and integration.",
+      "Work directly with users to understand requirements and iterate rapidly.",
+      "Ensure the security and reliability of mission-critical systems.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science or related field.",
+      "Proficiency in Java, TypeScript, or similar languages.",
+      "Experience building full-stack applications.",
+      "Ability to handle ambiguous problems and rapidly learn new domains.",
+    ],
   },
   {
     id: "job-14",
@@ -154,6 +336,20 @@ export const jobs: Job[] = [
     term: "Fall 2025",
     skills: ["React", "Design Systems", "CSS"],
     postedAt: "2026-03-04",
+    about:
+      "Figma is a design platform for teams who build products together. We are looking for UI/UX Developer Co-ops who bridge the gap between design and engineering to build our internal design systems and application interfaces.",
+    responsibilities: [
+      "Translate high-fidelity Figma designs into robust React components.",
+      "Contribute to our comprehensive internal design system.",
+      "Ensure components are highly accessible and responsive.",
+      "Collaborate with the design team to iterate on interactions and animations.",
+    ],
+    requirements: [
+      "Pursuing a degree in Computer Science, HCI, or Design.",
+      "Deep understanding of CSS, HTML, and modern browser APIs.",
+      "Experience building React applications.",
+      "Strong eye for design, typography, and detail.",
+    ],
   },
   {
     id: "job-15",
@@ -165,5 +361,19 @@ export const jobs: Job[] = [
     term: "Summer 2026",
     skills: ["C", "RTOS", "Hardware"],
     postedAt: "2026-03-07",
+    about:
+      "Tesla's mission is to accelerate the world's transition to sustainable energy. We're looking for Embedded Systems Interns to write the firmware that controls motors, batteries, charging systems, and infotainment units.",
+    responsibilities: [
+      "Develop embedded C firmware for microcontrollers.",
+      "Write drivers for low-level hardware interfaces (I2C, SPI, CAN).",
+      "Perform hardware/software integration and bench testing.",
+      "Participate in design reviews for new electronic control units.",
+    ],
+    requirements: [
+      "Pursuing a degree in Electrical Engineering, Computer Engineering, or CS.",
+      "Strong C programming skills for resource-constrained systems.",
+      "Familiarity with Real-Time Operating Systems (RTOS).",
+      "Experience reading schematics and using an oscilloscope or logic analyzer.",
+    ],
   },
 ];

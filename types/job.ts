@@ -8,4 +8,7 @@ export interface Job {
   term: string;
   skills: string[];
   postedAt: string;
+  about: string;
+  responsibilities: string[];
+  requirements: string[];
 }
