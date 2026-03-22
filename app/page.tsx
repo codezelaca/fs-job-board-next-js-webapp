@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { jobs } from "@/data/jobs";
+import { getAllJobs } from "@/lib/jobs";
 import { JobCard } from "@/components/JobCard";
 
 type Props = {
@@ -20,11 +20,10 @@ export default async function Home(props: Props) {
   const pageStr = searchParams?.page;
   const currentPage = typeof pageStr === "string" ? parseInt(pageStr, 10) : 1;
   const ITEMS_PER_PAGE = 5;
-  const totalPages = Math.ceil(jobs.length / ITEMS_PER_PAGE);
-
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, jobs.length);
-  const paginatedJobs = jobs.slice(startIndex, endIndex);
+  const { jobs: paginatedJobs, totalPages } = await getAllJobs({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE
+  });
 
   return (
     <div className="flex flex-col flex-1 w-full relative overflow-hidden">

@@ -3,16 +3,9 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Search, ChevronDown, Check, Globe } from "lucide-react";
-import { jobs } from "@/data/jobs";
-
-// Extract unique locations dynamically from jobs data
-const rawLocations = Array.from(new Set(jobs.map((j) => j.location)));
-const remoteOptions = rawLocations.filter((loc) =>
-  loc.toLowerCase().includes("remote"),
-);
-const onsiteOptions = rawLocations
-  .filter((loc) => !loc.toLowerCase().includes("remote"))
-  .sort();
+export interface JobFiltersProps {
+  locations: string[];
+}
 
 // Job Type Options
 const jobTypeOptions = ["Internship", "Co-op", "Full-time"];
@@ -198,7 +191,13 @@ function CustomDropdown({
   );
 }
 
-export function JobFilters() {
+export function JobFilters({ locations }: JobFiltersProps) {
+  const remoteOptions = locations.filter((loc) =>
+    loc.toLowerCase().includes("remote"),
+  );
+  const onsiteOptions = locations
+    .filter((loc) => !loc.toLowerCase().includes("remote"))
+    .sort();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();

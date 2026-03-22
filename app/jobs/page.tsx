@@ -1,6 +1,6 @@
 import { JobCard } from "@/components/JobCard";
 import { JobFilters } from "@/components/JobFilters";
-import { jobs } from "@/data/jobs";
+import { getAllJobs, getUniqueLocations } from "@/lib/jobs";
 import Link from "next/link";
 import { Briefcase } from "lucide-react";
 
@@ -25,36 +25,15 @@ export default async function JobsPage(props: Props) {
   const currentPage = typeof pageStr === "string" ? parseInt(pageStr, 10) : 1;
   const ITEMS_PER_PAGE = 7;
 
-  // Filter Data
-  const filteredJobs = jobs.filter((job) => {
-    // keyword search checks title, company, skills
-    if (query) {
-      const stringifiedSkills = job.skills.join(" ").toLowerCase();
-      if (
-        !job.title.toLowerCase().includes(query) &&
-        !job.company.toLowerCase().includes(query) &&
-        !stringifiedSkills.includes(query)
-      ) {
-        return false;
-      }
-    }
-
-    if (location && !job.location.toLowerCase().includes(location)) {
-      return false;
-    }
-
-    // "Internship", "Co-op", "Full-time"
-    if (type && type !== "" && !job.type.includes(type)) {
-      return false;
-    }
-
-    return true;
+  const { jobs: paginatedJobs, totalPages, total: totalJobs } = await getAllJobs({
+    q: query,
+    location,
+    type,
+    page: currentPage,
+    limit: ITEMS_PER_PAGE
   });
 
-  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredJobs.length);
-  const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
+  const locations = await getUniqueLocations();
 
   return (
     <div className="flex-1 w-full relative">
@@ -74,15 +53,15 @@ export default async function JobsPage(props: Props) {
         <div className="grid lg:grid-cols-4 gap-8 items-start">
           {/* Sidebar / Filters */}
           <aside className="lg:col-span-1">
-            <JobFilters />
+            <JobFilters locations={locations} />
           </aside>
 
           {/* Job Listings Area */}
           <main className="lg:col-span-3 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-purple-500/10">
               <h2 className="text-xl font-bold">
-                {filteredJobs.length}{" "}
-                {filteredJobs.length === 1 ? "Job" : "Jobs"} Found
+                {totalJobs}{" "}
+                {totalJobs === 1 ? "Job" : "Jobs"} Found
               </h2>
             </div>
 

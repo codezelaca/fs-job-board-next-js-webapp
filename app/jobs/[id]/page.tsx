@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { jobs } from "@/data/jobs";
+import { getJobById, getAllJobs } from "@/lib/jobs";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 export async function generateStaticParams() {
+  const { jobs } = await getAllJobs({ limit: 100 });
   return jobs.map((job) => ({
     id: job.id,
   }));
@@ -22,7 +23,7 @@ export default async function JobDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const job = jobs.find((j) => j.id === id);
+  const job = await getJobById(id);
 
   if (!job) {
     notFound();
