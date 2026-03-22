@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getJobById, getAllJobs } from "@/lib/jobs";
 import Link from "next/link";
+import { ApplyModal } from "@/components/ApplyModal";
 import {
   ArrowLeft,
   Building2,
@@ -81,10 +82,7 @@ export default async function JobDetailsPage({
             </div>
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-              <button className="inline-flex h-12 w-full md:w-48 items-center justify-center rounded-lg bg-purple-600 px-6 font-semibold text-white shadow-xl shadow-purple-500/20 transition-all hover:bg-purple-700 hover:shadow-purple-500/40 hover:-translate-y-0.5">
-                Apply Now
-                <Sparkles className="w-4 h-4 ml-2 opacity-80" />
-              </button>
+              <ApplyModal jobTitle={job.title} companyName={job.company} />
               <button className="inline-flex h-12 w-full md:w-48 items-center justify-center rounded-lg border-2 border-purple-200 bg-white dark:bg-zinc-900 px-6 font-semibold text-purple-700 dark:text-purple-300 transition-colors hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30">
                 Save for later
               </button>
