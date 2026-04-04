@@ -101,14 +101,16 @@ model Category {
 }
 
 model Application {
-  id          String            @id @default(uuid())
-  jobId       String
-  job         Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  applicantId String
-  applicant   User              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
-  coverLetter String?
-  resumeUrl   String?
-  status      ApplicationStatus @default(PENDING)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id           String            @id @default(uuid())
+  jobId        String
+  job          Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId  String
+  applicant    User              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  coverLetter  String?
+  resumeUrl    String?
+  linkedInUrl  String?
+  portfolioUrl String?
+  status       ApplicationStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }

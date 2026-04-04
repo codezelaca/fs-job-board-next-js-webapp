@@ -82,7 +82,7 @@ export default async function JobDetailsPage({
             </div>
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-              <ApplyModal jobTitle={job.title} companyName={job.company} />
+              <ApplyModal jobTitle={job.title} companyName={job.company} jobSlug={job.id} />
               <button className="inline-flex h-12 w-full md:w-48 items-center justify-center rounded-lg border-2 border-purple-200 bg-white dark:bg-zinc-900 px-6 font-semibold text-purple-700 dark:text-purple-300 transition-colors hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30">
                 Save for later
               </button>

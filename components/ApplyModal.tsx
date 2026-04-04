@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sparkles, X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
-export function ApplyModal({ jobTitle, companyName }: { jobTitle: string; companyName: string }) {
+export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: string; companyName: string; jobSlug: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -15,6 +15,7 @@ export function ApplyModal({ jobTitle, companyName }: { jobTitle: string; compan
 
     const formData = new FormData(e.currentTarget);
     const data = {
+      jobSlug,
       fullName: formData.get("fullName"),
       email: formData.get("email"),
       linkedInUrl: formData.get("linkedInUrl"),
