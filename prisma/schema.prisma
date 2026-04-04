@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RECRUITER
+  JOB_SEEKER
+  ADMIN
+}
+
+enum LocationType {
+  ONSITE
+  HYBRID
+  REMOTE
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REJECTED
+  ACCEPTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  role      Role     @default(JOB_SEEKER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recruiter    Recruiter?
+  applications Application[]
+}
+
+model Recruiter {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName    String
+  companyLogoUrl String?
+  companyWebsite String?
+  aboutCompany   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  jobs Job[]
+}
+
+model Job {
+  id               String       @id @default(uuid())
+  slug             String       @unique
+  title            String
+  location         String?
+  locationType     LocationType
+  jobType          JobType
+  salaryMin        Int?
+  salaryMax        Int?
+  description      String
+  requirements     String?
+  applicationUrl   String?
+  applicationEmail String?
+  status           JobStatus    @default(DRAFT)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  expiresAt        DateTime?
+
+  recruiterId String
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  applications Application[]
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  jobs Job[]
+}
+
+model Application {
+  id          String            @id @default(uuid())
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId String
+  applicant   User              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  coverLetter String?
+  resumeUrl   String?
+  status      ApplicationStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
