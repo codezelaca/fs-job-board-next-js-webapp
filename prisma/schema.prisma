@@ -72,8 +72,11 @@ model Job {
   jobType          JobType
   salaryMin        Int?
   salaryMax        Int?
-  description      String
-  requirements     String?
+  about            String
+  term             String
+  skills           String[]
+  responsibilities String[]
+  requirements     String[]
   applicationUrl   String?
   applicationEmail String?
   status           JobStatus    @default(DRAFT)

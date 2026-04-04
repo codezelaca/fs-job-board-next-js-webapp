@@ -1,5 +1,6 @@
-import { jobs } from "@/data/jobs";
+import { prisma } from "./prisma";
 import { Job } from "@/types/job";
+import { JobType } from "@prisma/client";
 
 export interface GetAllJobsParams {
   q?: string;
@@ -17,59 +18,111 @@ export interface PaginatedJobs {
   totalPages: number;
 }
 
+function mapJobTypeToString(jobType: JobType): string {
+  if (jobType === "FULL_TIME") return "Full-time";
+  if (jobType === "PART_TIME") return "Part-time";
+  if (jobType === "CONTRACT") return "Contract";
+  if (jobType === "INTERNSHIP") return "Internship";
+  return jobType.replace("_", " ");
+}
+
 export async function getAllJobs(params: GetAllJobsParams): Promise<PaginatedJobs> {
-  const query = typeof params.q === "string" ? params.q.toLowerCase() : "";
-  const location = typeof params.location === "string" ? params.location.toLowerCase() : "";
-  const type = typeof params.type === "string" ? params.type : "";
+  const query = typeof params.q === "string" ? params.q.trim() : "";
+  const location = typeof params.location === "string" ? params.location.trim() : "";
+  const typeParam = typeof params.type === "string" ? params.type.trim() : "";
 
   const page = typeof params.page === "string" ? parseInt(params.page, 10) : (params.page || 1);
   const limit = typeof params.limit === "string" ? parseInt(params.limit, 10) : (params.limit || 7);
 
-  const filteredJobs = jobs.filter((job) => {
-    if (query) {
-      const stringifiedSkills = job.skills.join(" ").toLowerCase();
-      if (
-        !job.title.toLowerCase().includes(query) &&
-        !job.company.toLowerCase().includes(query) &&
-        !stringifiedSkills.includes(query)
-      ) {
-        return false;
-      }
+  const whereClause: any = {};
+
+  if (query) {
+    whereClause.OR = [
+      { title: { contains: query, mode: "insensitive" } },
+      { about: { contains: query, mode: "insensitive" } },
+      { recruiter: { companyName: { contains: query, mode: "insensitive" } } },
+    ];
+  }
+
+  if (location) {
+    whereClause.location = { contains: location, mode: "insensitive" };
+  }
+
+  if (typeParam) {
+    const t = typeParam.toLowerCase();
+    let pType: JobType | undefined;
+    if (t.includes("internship")) pType = "INTERNSHIP";
+    else if (t.includes("part-time") || t.includes("part time")) pType = "PART_TIME";
+    else if (t.includes("contract")) pType = "CONTRACT";
+    else if (t.includes("full-time") || t.includes("full time")) pType = "FULL_TIME";
+    
+    if (pType) {
+      whereClause.jobType = pType;
     }
+  }
 
-    if (location && !job.location.toLowerCase().includes(location)) {
-      return false;
-    }
+  const [total, jobs] = await Promise.all([
+    prisma.job.count({ where: whereClause }),
+    prisma.job.findMany({
+      where: whereClause,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { recruiter: true, category: true },
+      orderBy: { createdAt: 'desc' }
+    })
+  ]);
 
-    if (type && type !== "" && !job.type.includes(type)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const total = filteredJobs.length;
-  const totalPages = Math.ceil(total / limit);
-  const startIndex = (page - 1) * limit;
-  const endIndex = Math.min(startIndex + limit, total);
-  
-  const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
+  const mappedJobs: Job[] = jobs.map(j => ({
+    id: j.slug,
+    title: j.title,
+    company: j.recruiter.companyName,
+    companyInitial: j.recruiter.companyName.charAt(0).toUpperCase(),
+    location: j.location || "Unknown",
+    type: mapJobTypeToString(j.jobType),
+    term: j.term,
+    skills: j.skills,
+    postedAt: j.createdAt.toISOString(),
+    about: j.about,
+    responsibilities: j.responsibilities,
+    requirements: j.requirements,
+  }));
 
   return {
-    jobs: paginatedJobs,
+    jobs: mappedJobs,
     total,
     page,
     limit,
-    totalPages,
+    totalPages: Math.ceil(total / limit),
   };
 }
 
 export async function getJobById(id: string): Promise<Job | null> {
-  const job = jobs.find((j) => j.id === id);
-  return job || null;
+  const job = await prisma.job.findUnique({
+    where: { slug: id },
+    include: { recruiter: true }
+  });
+
+  if (!job) return null;
+
+  return {
+    id: job.slug,
+    title: job.title,
+    company: job.recruiter.companyName,
+    companyInitial: job.recruiter.companyName.charAt(0).toUpperCase(),
+    location: job.location || "Unknown",
+    type: mapJobTypeToString(job.jobType),
+    term: job.term,
+    skills: job.skills,
+    postedAt: job.createdAt.toISOString(),
+    about: job.about,
+    responsibilities: job.responsibilities,
+    requirements: job.requirements,
+  };
 }
 
 export async function getUniqueLocations(): Promise<string[]> {
-  const rawLocations = Array.from(new Set(jobs.map((j) => j.location)));
-  return rawLocations;
+  const locationGroups = await prisma.job.groupBy({
+    by: ["location"]
+  });
+  return locationGroups.map(g => g.location).filter(Boolean) as string[];
 }
