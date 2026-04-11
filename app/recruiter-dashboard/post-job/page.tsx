@@ -16,7 +16,7 @@ export default async function PostJobPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 xl:px-8 py-8 md:py-10 max-w-5xl">
+    <div className="container mx-auto px-4 xl:px-8 py-8 md:py-10 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
         <Link

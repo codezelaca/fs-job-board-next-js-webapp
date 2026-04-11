@@ -243,14 +243,30 @@ function BulletListInput({
 
 // ─── Main Form ────────────────────────────────────────────────────────────────
 
-export default function PostJobForm({ categories }: { categories: Category[] }) {
+export default function PostJobForm({
+  categories,
+  initialData,
+}: {
+  categories: Category[];
+  initialData?: Partial<FormData> & { id?: string };
+}) {
   const router = useRouter();
-  const [form, setForm] = useState<FormData>(INITIAL);
+  const [form, setForm] = useState<FormData>(() => ({
+    ...INITIAL,
+    ...initialData,
+    // Ensure numbers are strings for form values
+    salaryMin: initialData?.salaryMin?.toString() || "",
+    salaryMax: initialData?.salaryMax?.toString() || "",
+    // Format date string for <input type="date">
+    expiresAt: initialData?.expiresAt ? initialData.expiresAt.split("T")[0] : "",
+  } as FormData));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitAction, setSubmitAction] = useState<"DRAFT" | "PUBLISHED">("DRAFT");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const isEdit = !!initialData?.id;
 
   const set = useCallback(<K extends keyof FormData>(field: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -311,8 +327,11 @@ export default function PostJobForm({ categories }: { categories: Category[] }) 
         expiresAt: form.expiresAt || null,
       };
 
-      const res = await fetch("/api/recruiter/jobs", {
-        method: "POST",
+      const url = isEdit ? `/api/recruiter/jobs/${initialData.id}` : "/api/recruiter/jobs";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });

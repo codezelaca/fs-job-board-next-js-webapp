@@ -15,11 +15,16 @@ import {
   ChevronsUpDown,
   Eye,
   Search,
+  Pencil,
+  Trash2,
+  Users,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useTransition } from "react";
 import JobViewModal from "./JobViewModal";
 import JobsPagination from "./JobsPagination";
+import DeleteJobModal from "./DeleteJobModal";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -94,6 +99,7 @@ export default function JobsTable({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
   const [selectedJob, setSelectedJob] = useState<RecruiterJob | null>(null);
+  const [deletingJob, setDeletingJob] = useState<RecruiterJob | null>(null);
 
   // Reflect server sort state into TanStack Table state (display only)
   const sorting: SortingState = useMemo(
@@ -186,9 +192,13 @@ export default function JobsTable({
       columnHelper.accessor("applicationsCount", {
         header: "Applications",
         cell: (info) => (
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <Link
+            href={`/recruiter-dashboard/applications?jobId=${info.row.original.id}`}
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group"
+          >
+            <Users className="w-3.5 h-3.5 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
             {info.getValue()}
-          </span>
+          </Link>
         ),
       }),
       columnHelper.accessor("createdAt", {
@@ -207,13 +217,29 @@ export default function JobsTable({
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
-          <button
-            onClick={() => setSelectedJob(row.original)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            View
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setSelectedJob(row.original)}
+              className="p-1.5 text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors"
+              title="View Details"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <Link
+              href={`/recruiter-dashboard/jobs/${row.original.id}/edit`}
+              className="p-1.5 text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
+              title="Edit Job"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={() => setDeletingJob(row.original)}
+              className="p-1.5 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Delete Job"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         ),
       }),
     ],
@@ -323,6 +349,18 @@ export default function JobsTable({
 
       {selectedJob && (
         <JobViewModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+      )}
+
+      {deletingJob && (
+        <DeleteJobModal
+          jobId={deletingJob.id}
+          jobTitle={deletingJob.title}
+          onClose={() => setDeletingJob(null)}
+          onDeleted={() => {
+            setDeletingJob(null);
+            router.refresh();
+          }}
+        />
       )}
     </>
   );
