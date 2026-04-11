@@ -174,7 +174,7 @@ export default async function ManageJobsPage({
           </p>
         </div>
         <Link
-          href="/post-job"
+          href="/recruiter-dashboard/post-job"
           id="post-job-btn"
           className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/40 hover:shadow-md self-start sm:self-auto"
         >

@@ -16,8 +16,6 @@ export interface RecruiterJob {
   requirements: string[];
   about: string;
   term: string;
-  applicationUrl: string | null;
-  applicationEmail: string | null;
   applicationsCount: number;
   createdAt: string;
   updatedAt: string;

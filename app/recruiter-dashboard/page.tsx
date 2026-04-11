@@ -177,7 +177,7 @@ export default function RecruiterDashboardPage() {
               Attract top talent from CCA by publishing a new opportunity to the board.
             </p>
             <Link 
-              href="/post-job" 
+              href="/recruiter-dashboard/post-job" 
               className="inline-flex items-center justify-center w-full px-4 py-2.5 bg-white text-indigo-600 hover:bg-indigo-50 font-medium rounded-xl transition-colors shadow-sm"
             >
               Draft Job Post

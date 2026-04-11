@@ -231,36 +231,7 @@ export default function JobViewModal({ job, onClose }: JobViewModalProps) {
             </div>
           )}
 
-          {/* Application Links */}
-          {(job.applicationUrl || job.applicationEmail) && (
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50/50 dark:bg-zinc-950/50">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3 uppercase tracking-wide">
-                Application Details
-              </h3>
-              <div className="space-y-2">
-                {job.applicationUrl && (
-                  <a
-                    href={job.applicationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    {job.applicationUrl}
-                  </a>
-                )}
-                {job.applicationEmail && (
-                  <a
-                    href={`mailto:${job.applicationEmail}`}
-                    className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    <Mail className="w-4 h-4" />
-                    {job.applicationEmail}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Footer */}
