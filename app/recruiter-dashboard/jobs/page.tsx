@@ -1,27 +1,102 @@
 import { prisma } from "@/lib/prisma";
 import { RecruiterJob } from "@/types/recruiter-job";
 import JobsTable from "@/components/recruiter/JobsTable";
+import JobsFiltersBar from "@/components/recruiter/JobsFiltersBar";
 import Link from "next/link";
 import { Plus, Briefcase } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { JobStatus, JobType, Prisma } from "@prisma/client";
 
 export const metadata: Metadata = {
   title: "Manage Jobs | CCA Recruiter",
   description: "View, manage and track all your job postings.",
 };
 
-// Fetch directly in server component for best performance & type safety
-async function getRecruiterJobs(): Promise<RecruiterJob[]> {
-  const jobs = await prisma.job.findMany({
-    include: {
-      recruiter: true,
-      category: true,
-      _count: { select: { applications: true } },
-    },
-    orderBy: { createdAt: "desc" },
+// ─── Types ─────────────────────────────────────────────────────────────────
+
+interface SearchParams {
+  q?: string;
+  status?: string;
+  jobType?: string;
+  sort?: string;
+  order?: string;
+  page?: string;
+  limit?: string;
+}
+
+// Valid sort fields mapped to Prisma orderBy keys
+const SORT_FIELDS: Record<string, keyof Prisma.JobOrderByWithRelationInput> = {
+  title: "title",
+  status: "status",
+  createdAt: "createdAt",
+  jobType: "jobType",
+};
+
+// ─── Data Fetching ─────────────────────────────────────────────────────────
+
+async function getPageData(params: SearchParams) {
+  const q = params.q?.trim() ?? "";
+  const status = params.status as JobStatus | undefined;
+  const jobType = params.jobType as JobType | undefined;
+  const sortField = SORT_FIELDS[params.sort ?? ""] ?? "createdAt";
+  const sortOrder: "asc" | "desc" = params.order === "asc" ? "asc" : "desc";
+  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const limit = Math.min(50, Math.max(5, parseInt(params.limit ?? "10", 10)));
+
+  // Build WHERE clause
+  const where: Prisma.JobWhereInput = {};
+
+  if (q) {
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { recruiter: { companyName: { contains: q, mode: "insensitive" } } },
+      { location: { contains: q, mode: "insensitive" } },
+      { about: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  if (status && Object.values(JobStatus).includes(status)) {
+    where.status = status;
+  }
+
+  if (jobType && Object.values(JobType).includes(jobType)) {
+    where.jobType = jobType;
+  }
+
+  // Run count and page query in parallel — only fetches `limit` rows
+  const [total, jobs, totals] = await Promise.all([
+    prisma.job.count({ where }),
+    prisma.job.findMany({
+      where,
+      include: {
+        recruiter: true,
+        category: true,
+        _count: { select: { applications: true } },
+      },
+      orderBy: { [sortField]: sortOrder },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    // Status group counts for summary cards (full dataset, no filters)
+    prisma.job.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
+  ]);
+
+  const statusCounts = {
+    PUBLISHED: 0,
+    DRAFT: 0,
+    CLOSED: 0,
+    TOTAL: 0,
+  };
+  totals.forEach((g) => {
+    statusCounts[g.status as JobStatus] = g._count._all;
+    statusCounts.TOTAL += g._count._all;
   });
 
-  return jobs.map((j) => ({
+  const mapped: RecruiterJob[] = jobs.map((j) => ({
     id: j.id,
     slug: j.slug,
     title: j.title,
@@ -46,14 +121,44 @@ async function getRecruiterJobs(): Promise<RecruiterJob[]> {
     updatedAt: j.updatedAt.toISOString(),
     expiresAt: j.expiresAt?.toISOString() ?? null,
   }));
+
+  return {
+    jobs: mapped,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    sortField: params.sort ?? "createdAt",
+    sortOrder,
+    statusCounts,
+  };
 }
 
-export default async function ManageJobsPage() {
-  const jobs = await getRecruiterJobs();
+// ─── Page ──────────────────────────────────────────────────────────────────
 
-  const published = jobs.filter((j) => j.status === "PUBLISHED").length;
-  const drafts = jobs.filter((j) => j.status === "DRAFT").length;
-  const closed = jobs.filter((j) => j.status === "CLOSED").length;
+export default async function ManageJobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const {
+    jobs,
+    total,
+    page,
+    limit,
+    totalPages,
+    sortField,
+    sortOrder,
+    statusCounts,
+  } = await getPageData(params);
+
+  const summaryCards = [
+    { label: "Total Jobs", value: statusCounts.TOTAL, color: "text-zinc-900 dark:text-zinc-50", accent: "text-zinc-500 dark:text-zinc-400" },
+    { label: "Published", value: statusCounts.PUBLISHED, color: "text-zinc-900 dark:text-zinc-50", accent: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Drafts", value: statusCounts.DRAFT, color: "text-zinc-900 dark:text-zinc-50", accent: "text-amber-600 dark:text-amber-400" },
+    { label: "Closed", value: statusCounts.CLOSED, color: "text-zinc-900 dark:text-zinc-50", accent: "text-zinc-500 dark:text-zinc-400" },
+  ];
 
   return (
     <div className="container mx-auto px-4 xl:px-8 py-8 md:py-10 max-w-7xl">
@@ -65,7 +170,7 @@ export default async function ManageJobsPage() {
             Manage Jobs
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm">
-            Review, search and manage all your job postings.
+            Review, search and manage all your job postings. Results are fetched server-side.
           </p>
         </div>
         <Link
@@ -80,34 +185,51 @@ export default async function ManageJobsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
-            Total
-          </p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{jobs.length}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
-            Published
-          </p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{published}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1">
-            Drafts
-          </p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{drafts}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
-            Closed
-          </p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{closed}</p>
-        </div>
+        {summaryCards.map(({ label, value, color, accent }) => (
+          <div
+            key={label}
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm"
+          >
+            <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${accent}`}>
+              {label}
+            </p>
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Table */}
-      <JobsTable data={jobs} />
+      {/* Results summary */}
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+        {params.q || params.status || params.jobType ? (
+          <>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">{total}</span> filtered results
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">{total}</span> total jobs
+          </>
+        )}
+        {" · "}Showing page <span className="font-medium text-zinc-700 dark:text-zinc-300">{page}</span> of{" "}
+        <span className="font-medium text-zinc-700 dark:text-zinc-300">{totalPages}</span>
+      </p>
+
+      {/* Filters — Client Component, reads/writes URL params */}
+      <Suspense>
+        <JobsFiltersBar />
+      </Suspense>
+
+      {/* Table — Client Component, receives only this page's rows */}
+      <Suspense>
+        <JobsTable
+          data={jobs}
+          total={total}
+          page={page}
+          totalPages={totalPages}
+          limit={limit}
+          sortField={sortField}
+          sortOrder={sortOrder}
+        />
+      </Suspense>
     </div>
   );
 }

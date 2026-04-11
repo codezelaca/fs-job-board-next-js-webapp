@@ -1,34 +1,27 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
   flexRender,
   createColumnHelper,
   SortingState,
-  ColumnFiltersState,
 } from "@tanstack/react-table";
 import { RecruiterJob } from "@/types/recruiter-job";
 import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Eye,
   Search,
-  Filter,
-  X,
 } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTransition } from "react";
 import JobViewModal from "./JobViewModal";
+import JobsPagination from "./JobsPagination";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 const JOB_TYPE_LABELS: Record<RecruiterJob["jobType"], string> = {
   FULL_TIME: "Full-time",
@@ -64,41 +57,72 @@ const LOCATION_TYPE_LABELS: Record<RecruiterJob["locationType"], string> = {
   REMOTE: "Remote",
 };
 
+// Sortable columns we send to the server
+const SORTABLE_COLUMNS: Record<string, string> = {
+  title: "title",
+  status: "status",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+  jobType: "jobType",
+};
+
 const columnHelper = createColumnHelper<RecruiterJob>();
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────
 
-export default function JobsTable({ data }: { data: RecruiterJob[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+interface JobsTableProps {
+  data: RecruiterJob[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+  sortField: string;
+  sortOrder: "asc" | "desc";
+}
+
+export default function JobsTable({
+  data,
+  total,
+  page,
+  totalPages,
+  limit,
+  sortField,
+  sortOrder,
+}: JobsTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
   const [selectedJob, setSelectedJob] = useState<RecruiterJob | null>(null);
 
-  // Filter state for dropdowns
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  // Reflect server sort state into TanStack Table state (display only)
+  const sorting: SortingState = useMemo(
+    () =>
+      sortField
+        ? [{ id: sortField, desc: sortOrder === "desc" }]
+        : [],
+    [sortField, sortOrder]
+  );
 
-  // Apply sidebar filters by manipulating columnFilters
-  const filteredData = useMemo(() => {
-    let result = data;
-    if (globalFilter) {
-      const q = globalFilter.toLowerCase();
-      result = result.filter(
-        (j) =>
-          j.title.toLowerCase().includes(q) ||
-          j.company.toLowerCase().includes(q) ||
-          j.location.toLowerCase().includes(q) ||
-          j.category.toLowerCase().includes(q)
-      );
+  // When a column header is clicked, push new sort params to URL → server re-fetches
+  const handleSort = (columnId: string) => {
+    if (!SORTABLE_COLUMNS[columnId]) return;
+    const params = new URLSearchParams(searchParams.toString());
+    const currentField = searchParams.get("sort");
+    const currentOrder = searchParams.get("order") ?? "desc";
+
+    if (currentField === columnId) {
+      params.set("order", currentOrder === "asc" ? "desc" : "asc");
+    } else {
+      params.set("sort", columnId);
+      params.set("order", "desc");
     }
-    if (statusFilter) {
-      result = result.filter((j) => j.status === statusFilter);
-    }
-    if (typeFilter) {
-      result = result.filter((j) => j.jobType === typeFilter);
-    }
-    return result;
-  }, [data, globalFilter, statusFilter, typeFilter]);
+    params.set("page", "1");
+
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  };
 
   const columns = useMemo(
     () => [
@@ -117,6 +141,7 @@ export default function JobsTable({ data }: { data: RecruiterJob[] }) {
       }),
       columnHelper.accessor("category", {
         header: "Category",
+        enableSorting: false,
         cell: (info) => (
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
             {info.getValue()}
@@ -133,6 +158,7 @@ export default function JobsTable({ data }: { data: RecruiterJob[] }) {
       }),
       columnHelper.accessor("locationType", {
         header: "Location",
+        enableSorting: false,
         cell: (info) => (
           <div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -195,109 +221,25 @@ export default function JobsTable({ data }: { data: RecruiterJob[] }) {
   );
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
-    state: { sorting, columnFilters },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    state: { sorting },
+    // Sorting handled server-side - disable client sorting
+    manualSorting: true,
+    manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
   });
 
-  const clearFilters = useCallback(() => {
-    setGlobalFilter("");
-    setStatusFilter("");
-    setTypeFilter("");
-  }, []);
-
-  const hasActiveFilters = globalFilter || statusFilter || typeFilter;
-
-  const SortIcon = ({ column }: { column: any }) => {
-    if (!column.getCanSort()) return null;
-    if (column.getIsSorted() === "asc") return <ChevronUp className="w-3.5 h-3.5" />;
-    if (column.getIsSorted() === "desc") return <ChevronDown className="w-3.5 h-3.5" />;
-    return <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400" />;
+  const SortIcon = ({ columnId }: { columnId: string }) => {
+    if (!SORTABLE_COLUMNS[columnId]) return null;
+    const isSorted = sortField === columnId;
+    if (isSorted && sortOrder === "asc") return <ChevronUp className="w-3.5 h-3.5" />;
+    if (isSorted && sortOrder === "desc") return <ChevronDown className="w-3.5 h-3.5" />;
+    return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />;
   };
 
   return (
     <>
-      {/* Search & Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        {/* Global Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-          <input
-            id="jobs-search"
-            type="text"
-            placeholder="Search by title, company, location..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all"
-          />
-        </div>
-
-        {/* Status Filter */}
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-          <select
-            id="jobs-status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="pl-9 pr-8 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all appearance-none cursor-pointer min-w-[140px]"
-          >
-            <option value="">All Statuses</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="DRAFT">Draft</option>
-            <option value="CLOSED">Closed</option>
-          </select>
-        </div>
-
-        {/* Type Filter */}
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-          <select
-            id="jobs-type-filter"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="pl-9 pr-8 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all appearance-none cursor-pointer min-w-[140px]"
-          >
-            <option value="">All Types</option>
-            <option value="FULL_TIME">Full-time</option>
-            <option value="PART_TIME">Part-time</option>
-            <option value="CONTRACT">Contract</option>
-            <option value="INTERNSHIP">Internship</option>
-          </select>
-        </div>
-
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Results summary */}
-      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-        Showing{" "}
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">
-          {filteredData.length}
-        </span>{" "}
-        of{" "}
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">
-          {data.length}
-        </span>{" "}
-        jobs
-      </p>
-
-      {/* Table */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -307,27 +249,32 @@ export default function JobsTable({ data }: { data: RecruiterJob[] }) {
                   key={headerGroup.id}
                   className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/50"
                 >
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {header.isPlaceholder ? null : (
-                        <button
-                          className={`inline-flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors ${
-                            header.column.getCanSort() ? "cursor-pointer" : "cursor-default"
-                          }`}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          <SortIcon column={header.column} />
-                        </button>
-                      )}
-                    </th>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const canSort = !!SORTABLE_COLUMNS[header.id];
+                    return (
+                      <th
+                        key={header.id}
+                        className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap"
+                      >
+                        {header.isPlaceholder ? null : (
+                          <button
+                            className={`inline-flex items-center gap-1 transition-colors ${
+                              canSort
+                                ? "cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100"
+                                : "cursor-default"
+                            }`}
+                            onClick={() => canSort && handleSort(header.id)}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                            <SortIcon columnId={header.id} />
+                          </button>
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
@@ -366,72 +313,14 @@ export default function JobsTable({ data }: { data: RecruiterJob[] }) {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Rows per page:</span>
-            <select
-              id="jobs-page-size"
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              className="text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {[5, 10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 mr-2">
-              Page{" "}
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                {table.getState().pagination.pageIndex + 1}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                {table.getPageCount()}
-              </span>
-            </span>
-            <button
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              aria-label="First page"
-            >
-              <ChevronsLeft className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-            <button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-            <button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              aria-label="Next page"
-            >
-              <ChevronRight className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-            <button
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              aria-label="Last page"
-            >
-              <ChevronsRight className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-            </button>
-          </div>
-        </div>
+        <JobsPagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          limit={limit}
+        />
       </div>
 
-      {/* Job View Modal */}
       {selectedJob && (
         <JobViewModal job={selectedJob} onClose={() => setSelectedJob(null)} />
       )}
