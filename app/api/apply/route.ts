@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session || session.user.role !== "JOB_SEEKER") {
+      return NextResponse.json({ error: "Unauthorized. You must be logged in as a Candidate to apply." }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { jobSlug, fullName, email, linkedInUrl, portfolioUrl, coverLetter } = body;
+    const { jobSlug, linkedInUrl, portfolioUrl, coverLetter } = body;
 
     // Server-Side Validation
     if (!jobSlug || typeof jobSlug !== "string") {
       return NextResponse.json({ error: "Missing or invalid job reference." }, { status: 400 });
-    }
-
-    if (!fullName || typeof fullName !== "string" || fullName.trim().length < 2) {
-      return NextResponse.json({ error: "Please provide a valid full name." }, { status: 400 });
-    }
-
-    if (!email || typeof email !== "string" || !email.includes("@")) {
-      return NextResponse.json({ error: "Please provide a valid email address." }, { status: 400 });
     }
 
     if (!linkedInUrl || typeof linkedInUrl !== "string" || !linkedInUrl.startsWith("http")) {
@@ -25,6 +23,10 @@ export async function POST(request: Request) {
 
     if (!coverLetter || typeof coverLetter !== "string" || coverLetter.trim().length < 10) {
       return NextResponse.json({ error: "Please provide a cover letter (at least 10 characters)." }, { status: 400 });
+    }
+
+    if (portfolioUrl && (typeof portfolioUrl !== "string" || !portfolioUrl.startsWith("http"))) {
+      return NextResponse.json({ error: "Please provide a valid portfolio or GitHub URL." }, { status: 400 });
     }
 
     // 1. Fetch Job from Database securely using Slug ID
@@ -36,34 +38,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The specified job listing no longer exists." }, { status: 404 });
     }
 
-    // 2. Identify or Create Applicant (User Identity)
-    let applicant = await prisma.user.findUnique({
-      where: { email },
+    // 2. Fetch the candidate profile to copy the onboarding resumeUrl
+    const candidateProfile = await prisma.candidate.findUnique({
+      where: { userId: session.user.id },
     });
-
-    if (!applicant) {
-      applicant = await prisma.user.create({
-        data: {
-          email,
-          name: fullName,
-          role: "JOB_SEEKER",
-        },
-      });
-    } else if (!applicant.name) {
-      applicant = await prisma.user.update({
-        where: { id: applicant.id },
-        data: { name: fullName },
-      });
-    }
 
     // 3. Create the Database Application connection
     const application = await prisma.application.create({
       data: {
         jobId: job.id,
-        applicantId: applicant.id,
+        applicantId: session.user.id,
         coverLetter,
         linkedInUrl,
-        portfolioUrl: portfolioUrl && typeof portfolioUrl === "string" ? portfolioUrl : null,
+        portfolioUrl: portfolioUrl || null,
+        resumeUrl: candidateProfile?.resumeUrl || null, // Auto-link their saved resume URL!
         status: "PENDING",
       },
     });

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getJobById, getAllJobs } from "@/lib/jobs";
 import Link from "next/link";
 import { ApplyModal } from "@/components/ApplyModal";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import {
   ArrowLeft,
   Building2,
@@ -28,6 +30,32 @@ export default async function JobDetailsPage({
 
   if (!job) {
     notFound();
+  }
+
+  const session = await auth();
+  let candidateData = null;
+
+  if (session?.user && session.user.role === "JOB_SEEKER") {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        candidate: true,
+        applications: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (dbUser) {
+      candidateData = {
+        name: dbUser.name || "",
+        email: dbUser.email || "",
+        resumeUrl: dbUser.candidate?.resumeUrl || "",
+        linkedInUrl: dbUser.applications[0]?.linkedInUrl || "",
+        portfolioUrl: dbUser.applications[0]?.portfolioUrl || "",
+      };
+    }
   }
 
   return (
@@ -82,7 +110,14 @@ export default async function JobDetailsPage({
             </div>
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 pt-4 md:pt-0 shrink-0 w-full md:w-auto">
-              <ApplyModal jobTitle={job.title} companyName={job.company} jobSlug={job.id} />
+              <ApplyModal 
+                jobTitle={job.title} 
+                companyName={job.company} 
+                jobSlug={job.id} 
+                isLoggedIn={!!session}
+                isCandidate={session?.user?.role === "JOB_SEEKER"}
+                candidateData={candidateData}
+              />
               <button className="inline-flex h-12 w-full md:w-48 items-center justify-center rounded-lg border-2 border-purple-200 bg-white dark:bg-zinc-900 px-6 font-semibold text-purple-700 dark:text-purple-300 transition-colors hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30">
                 Save for later
               </button>

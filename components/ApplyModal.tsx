@@ -1,9 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, X, CheckCircle2, Loader2, AlertCircle, LogIn, UserPlus } from "lucide-react";
+import Link from "next/link";
 
-export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: string; companyName: string; jobSlug: string }) {
+interface CandidateData {
+  name: string;
+  email: string;
+  resumeUrl?: string;
+  linkedInUrl?: string;
+  portfolioUrl?: string;
+}
+
+export function ApplyModal({
+  jobTitle,
+  companyName,
+  jobSlug,
+  isLoggedIn,
+  isCandidate,
+  candidateData,
+}: {
+  jobTitle: string;
+  companyName: string;
+  jobSlug: string;
+  isLoggedIn: boolean;
+  isCandidate: boolean;
+  candidateData: CandidateData | null;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -16,8 +39,9 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
     const formData = new FormData(e.currentTarget);
     const data = {
       jobSlug,
-      fullName: formData.get("fullName"),
-      email: formData.get("email"),
+      // If candidateData exists, we send those, otherwise we fallback to form fields (though backend will verify auth anyway)
+      fullName: candidateData?.name || formData.get("fullName"),
+      email: candidateData?.email || formData.get("email"),
       linkedInUrl: formData.get("linkedInUrl"),
       portfolioUrl: formData.get("portfolioUrl"),
       coverLetter: formData.get("coverLetter"),
@@ -45,8 +69,6 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
 
   const closeModal = () => {
     setIsOpen(false);
-    
-    // Reset state after the close animation completes to prevent jumping UI
     setTimeout(() => {
       setStatus("idle");
       setErrorMessage("");
@@ -84,23 +106,70 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                 </p>
               </div>
 
-              {status === "success" ? (
+              {!isLoggedIn ? (
+                // Guest Prompt
+                <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in duration-300">
+                  <div className="w-16 h-16 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mb-5 border border-purple-100 dark:border-purple-500/20">
+                    <LogIn className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Candidate Account Required</h3>
+                  <p className="text-foreground/70 max-w-md mx-auto mb-6 text-sm">
+                    You must be logged in as a <strong>Candidate</strong> to apply for this job. Sign up or log in to manage your applications and resume.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Link
+                      href={`/login?callbackUrl=/jobs/${jobSlug}`}
+                      className="inline-flex h-11 items-center justify-center rounded-xl bg-purple-600 px-6 font-semibold text-white transition-all hover:bg-purple-700 w-full sm:w-auto text-sm shadow-sm"
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 font-semibold text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all w-full sm:w-auto text-sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Sign Up
+                    </Link>
+                  </div>
+                </div>
+              ) : !isCandidate ? (
+                // Logged in but not Candidate (e.g. Recruiter)
+                <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in duration-300">
+                  <div className="w-16 h-16 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mb-5 border border-amber-100 dark:border-amber-500/20">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Wrong Account Type</h3>
+                  <p className="text-foreground/70 max-w-md mx-auto mb-6 text-sm">
+                    It looks like you are logged in as a <strong>Recruiter</strong>. To apply for jobs, please log in with a Candidate account.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Link
+                      href="/login"
+                      className="inline-flex h-11 items-center justify-center rounded-xl bg-purple-600 px-6 font-semibold text-white transition-all hover:bg-purple-700 w-full sm:w-auto text-sm shadow-sm"
+                    >
+                      Switch Accounts
+                    </Link>
+                  </div>
+                </div>
+              ) : status === "success" ? (
+                // Success screen
                 <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-6 ring-8 ring-green-50 dark:ring-green-900/10">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3">Application Submitted!</h3>
-                  <p className="text-foreground/70 max-w-md mx-auto mb-8">
-                    Your application for the <strong>{jobTitle}</strong> role at <strong>{companyName}</strong> has been successfully sent. Keep an eye on your inbox!
+                  <p className="text-foreground/70 max-w-md mx-auto mb-8 text-sm">
+                    Your application for the <strong>{jobTitle}</strong> role has been successfully sent. Keep track of it in your dashboard!
                   </p>
                   <button
                     onClick={closeModal}
-                    className="inline-flex h-12 w-full sm:w-auto min-w-[200px] items-center justify-center rounded-lg bg-green-600 px-8 font-semibold text-white shadow-lg shadow-green-500/20 transition-all hover:bg-green-700"
+                    className="inline-flex h-12 w-full sm:w-auto min-w-[200px] items-center justify-center rounded-lg bg-green-600 px-8 font-semibold text-white shadow-lg shadow-green-500/20 transition-all hover:bg-green-700 text-sm"
                   >
                     Done
                   </button>
                 </div>
               ) : (
+                // Standard candidate application form
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {status === "error" && (
                     <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-xl flex items-start gap-3 text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-2">
@@ -119,9 +188,10 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                         name="fullName"
                         type="text"
                         required
-                        disabled={status === "loading"}
+                        disabled={true}
+                        defaultValue={candidateData?.name || ""}
                         placeholder="Jane Doe"
-                        className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/30 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 transition-all text-sm disabled:opacity-50"
+                        className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/10 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none transition-all text-sm opacity-60 cursor-not-allowed"
                       />
                     </div>
                     <div className="space-y-2">
@@ -133,9 +203,10 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                         name="email"
                         type="email"
                         required
-                        disabled={status === "loading"}
+                        disabled={true}
+                        defaultValue={candidateData?.email || ""}
                         placeholder="jane@example.com"
-                        className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/30 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 transition-all text-sm disabled:opacity-50"
+                        className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/10 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none transition-all text-sm opacity-60 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -150,6 +221,7 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                         name="linkedInUrl"
                         type="url"
                         required
+                        defaultValue={candidateData?.linkedInUrl || ""}
                         disabled={status === "loading"}
                         placeholder="https://linkedin.com/in/..."
                         className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/30 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 transition-all text-sm disabled:opacity-50"
@@ -163,6 +235,7 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                         id="portfolioUrl"
                         name="portfolioUrl"
                         type="url"
+                        defaultValue={candidateData?.portfolioUrl || ""}
                         disabled={status === "loading"}
                         placeholder="https://github.com/..."
                         className="w-full h-11 px-4 rounded-lg border border-purple-200 bg-purple-50/30 dark:bg-zinc-900/50 dark:border-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 transition-all text-sm disabled:opacity-50"
@@ -189,7 +262,7 @@ export function ApplyModal({ jobTitle, companyName, jobSlug }: { jobTitle: strin
                     <button
                       type="submit"
                       disabled={status === "loading"}
-                      className="inline-flex h-12 w-full sm:w-auto min-w-[180px] items-center justify-center rounded-lg bg-purple-600 px-8 font-semibold text-white shadow-xl shadow-purple-500/20 transition-all hover:bg-purple-700 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                      className="inline-flex h-12 w-full sm:w-auto min-w-[180px] items-center justify-center rounded-lg bg-purple-600 px-8 font-semibold text-white shadow-xl shadow-purple-500/20 transition-all hover:bg-purple-700 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-sm"
                     >
                       {status === "loading" ? (
                         <Loader2 className="w-5 h-5 animate-spin" />

@@ -23,7 +23,7 @@ function mapJobTypeToString(jobType: JobType): string {
   if (jobType === "PART_TIME") return "Part-time";
   if (jobType === "CONTRACT") return "Contract";
   if (jobType === "INTERNSHIP") return "Internship";
-  return jobType.replace("_", " ");
+  return (jobType as string).replace("_", " ");
 }
 
 export async function getAllJobs(params: GetAllJobsParams): Promise<PaginatedJobs> {
