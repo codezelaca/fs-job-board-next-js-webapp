@@ -20,38 +20,56 @@
 ### 1. Robust Role-Based Authentication & Guardrails (Auth.js v5)
 - **Role-Based Workspaces:** Automatic, precise routing for **Recruiters**, **Candidates** (`JOB_SEEKER`), and **Administrators** (`ADMIN`).
 - **Dynamic Onboarding Engine:** Detects uncompleted onboarding records upon successful login and redirects recruiters and candidates to personalized, validated onboarding steps before granting workspace access.
-- **Strict Route Protection:** Integrated Next.js Middleware chains protect candidate workspaces (`/candidate-dashboard/*`), recruiter panels (`/recruiter-dashboard/*`), and admin views (`/admin/*`) from unauthorized access, bouncing users to home or login pages.
+- **Strict Route Protection:** Integrated Next.js Middleware chains protect candidate workspaces (`/candidate-dashboard/*`), recruiter panels (`/recruiter-dashboard/*`), and admin views (`/admin-dashboard/*`) from unauthorized access, bouncing users to home or login pages.
 
-### 2. Immersive Recruiter Portal (`/recruiter-dashboard`)
+### 2. Super Administrator Command Center (`/admin-dashboard`)
+- **Interactive Bento Metrics:** Real-time system monitoring displaying active candidates count, recruiter companies, job openings, and total application volumes.
+- **Unified Users Management:** Search, sort, and paginate through all registered users. Admins can update profile parameters on behalf of users, trigger dynamic role switches, and delete accounts with premium double-confirmation protection modals.
+- **Guardrails for Admin Role Upgrades:** User role alterations block assigning new `ADMIN` permissions, maintaining access exclusively for secure, pre-seeded admin accounts.
+- **Administrative Account Resets:** Generates cryptographic passwords on behalf of users with a one-click "Copy as Message" command to easily dispatch credentials.
+- **Global Applications & Jobs Pool:** Complete CRUD capabilities over job openings, and unified lists of system applications. Selecting any application displays a split action panel for scheduling interviews or rejecting candidates.
+
+### 3. Immersive Recruiter Portal (`/recruiter-dashboard`)
 - **Bento Stats Dashboard:** Fetches live, user-scoped metrics from the database (Active Jobs, Drafts, Closed Listings, and Total Applications).
 - **Recent Applications Quick Links:** Showcases the latest 5 incoming applications on the home screen, deep-linked to instantly pre-filter the Applications Pool.
 - **Advanced Job Management:** Create, save as draft, edit, publish, or close listings. Editing is strictly isolated so recruiters can only access their own jobs.
 - **Dynamic Applications Pool:** Search candidates by name/email, filter by job listings, and filter by status (PENDING, ACCEPTED, REJECTED) with clean server-driven pagination.
 - **Candidate Review Popup:** Click "Review" on any candidate to instantly view their core info, cover letter, skills as tag-pills, biography, LinkedIn/portfolio links, and shortlist or reject them in real-time.
 
-### 3. Dynamic Candidate Hub (`/candidate-dashboard`)
+### 4. Interactive Shortlist & Rejection Flows (Resend Integrated)
+- **Shortlisting and Scheduling Sub-forms:** Recruiters and Admins can schedule interviews using date/time picker pickers and provide direct video meeting URLs (e.g. Google Meet). Real-time frontend validations block historical scheduling and verify meeting links.
+- **Supported Rejection Feedback:** Employers can submit custom rejection feedback. Politeness and supportive remarks are maintained in the notification context.
+- **Resend Email Deliverability:** Dispatches rich HTML emails dynamically using the **Resend API**. If API keys are omitted or run in developer sandbox mode, elegant developer fallback triggers automatically log full email payloads to the running terminal.
+
+### 5. Dynamic Candidate Hub (`/candidate-dashboard`)
 - **Bento Stats Tracking:** Live statistics for Total Applications, Applications In Review, and Hired Successes.
 - **Smart Job Applications:** The public job board's **"Apply Now"** modal automatically locks for guests and recruiters. When a logged-in candidate applies, their name and email are pre-filled uneditably, and their onboarding **resume PDF link is automatically linked** to save time.
-- **Applications Timeline:** Review and track past application outcomes, including links to view original job listings.
-- **Live Profile Showcase:** A summary dashboard sidebar displaying your professional Bio, registered Skills tags, and resume links.
+- **Applications Timeline & Clickable Statuses:** Review and track past application outcomes, including links to view original job listings.
+- **Response Details Popover Modal:** Clicking on any `Shortlisted` or `Rejected` status badge opens a premium response window:
+  - **Shortlisted Candidates:** Showcase congratulatory screens, calendar logs, and a direct "Join Video Interview" CTA.
+  - **Rejected Candidates:** Display warm, empathetic, custom employer feedback to support their next application.
 
-### 4. Custom Profile & Security Workspace (`/settings`)
-- **Recruiter Profile Settings:** Modify name, company website URL, and long-form company descriptions.
-- **Candidate Profile Settings:** Customize bio, resume PDF location, and input skills as comma-separated tags (instantly parsed and array-registered).
-- **Cryptographic Password Resets:** Fully secure password reset form that verifies the user's current password using `bcrypt` before applying the new one.
+### 6. Dynamic Role-Based Common Header
+- **Authenticated Navigation Bars:** The public layout header dynamically tracks session states.
+- **Guest state:** Renders standard "Log in" and "Post a Job" buttons.
+- **Authenticated state:** Customizes right-aligned buttons to display a warm, role-tailored greeting alongside dedicated hub redirection links:
+  - `ADMIN` $\to$ **Admin Panel** (`/admin-dashboard`)
+  - `RECRUITER` $\to$ **Recruiter Hub** (`/recruiter-dashboard`)
+  - `JOB_SEEKER` $\to$ **My Dashboard** (`/candidate-dashboard`)
 
 ---
 
 ## 🛠 Advanced Tech Stack
 
-- **Framework**: [Next.js (App Router)](https://nextjs.org/)
+- **Framework**: [Next.js 15 (App Router / Turbopack)](https://nextjs.org/)
 - **Core Library**: [React 19](https://react.dev/)
 - **Authentication**: [Auth.js v5 (NextAuth)](https://authjs.dev/)
 - **Database Engine**: [Prisma ORM](https://www.prisma.io/) with PostgreSQL database adapter
+- **Email Gateway**: [Resend SDK](https://resend.com/)
 - **Security**: Cryptographic hashing via `bcryptjs`
 - **Language**: [TypeScript](https://www.typescriptlang.org/) for complete type-safety
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with a curated dark-mode and glassmorphic palette
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Styling**: Vanilla Tailwind CSS and custom glassmorphic components
 
 ---
 
@@ -62,14 +80,19 @@
 │   ├── (auth)/               # Login, Signup, Reset Password, Forgot Password
 │   ├── (public)/             # Main Job Board, Landing Page, Job Details
 │   ├── api/                  # Secure backend routes (/api/apply, NextAuth routing)
+│   ├── admin-dashboard/      # Super Admin Commands, Users control, Jobs pool
 │   ├── recruiter-dashboard/  # Recruiter metrics, job publishing, applications pool
 │   ├── candidate-dashboard/  # Candidate tracking panel, active metrics
 │   ├── onboarding/           # Onboarding paths for recruiter & candidate profile setup
 │   ├── globals.css           # Styling directives
 │   └── layout.tsx            # Global layout with Theme Providers & Auth Sessions
 ├── components/               # Shareable components (Headers, Modals, Forms, Bento cards)
-├── lib/                      # Shared helper actions, prisma instance
-│   └── actions/              # Secure Server Actions (auth, settings, applications, jobs)
+│   ├── admin/                # Admin-specific tables, detail side panels and modals
+│   ├── recruiter/            # Recruiter-specific tables, job view modals and forms
+│   ├── candidate/            # Candidate-specific interactive applications list
+│   └── Header.tsx            # Dynamic role-based header top navigation
+├── lib/                      # Shared helper actions, prisma instance, and Resend client
+│   └── actions/              # Secure Server Actions (auth, settings, applications, admin, jobs)
 ├── prisma/                   # DB Schemas, migrations, and seed scripts
 └── types/                    # TypeScript interfaces
 ```
@@ -108,6 +131,7 @@ Create a `.env` file in the root of the project:
 ```env
 DATABASE_URL="postgresql://username:password@localhost:5432/fs_job_board"
 AUTH_SECRET="your-super-secret-auth-key"
+RESEND_API_KEY="re_your_api_key" # Optional: dispatches active emails, fallbacks to terminal logs if omitted
 ```
 
 ### 2. Initialize Database & Seed
@@ -117,7 +141,10 @@ Run Prisma migrations and seed the initial users into your PostgreSQL database:
 npm install
 
 # Run database migrations
-npx prisma migrate dev
+npx prisma db push
+
+# Generate client
+npx prisma generate
 
 # Seed demonstration accounts
 npx prisma db seed
