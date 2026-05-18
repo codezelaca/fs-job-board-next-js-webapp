@@ -6,7 +6,10 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}`;
 
   // Fallback for development if RESEND_API_KEY is missing
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "dummy-key") {
+  if (
+    !process.env.RESEND_API_KEY ||
+    process.env.RESEND_API_KEY === "dummy-key"
+  ) {
     console.log("==========================================");
     console.log("📨 MOCK EMAIL SENDER (Missing RESEND_API_KEY)");
     console.log(`To: ${email}`);
@@ -18,7 +21,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "CCA Job Board <noreply@codezela.com>", // Update this when domain is verified
+      from: "CCA Job Board <onboarding@resend.dev>", // Update this when domain is verified
       to: [email],
       subject: "Reset your password",
       html: `
