@@ -1,97 +1,133 @@
 <div align="center">
   <h1>🚀 CCA Job Board</h1>
-  <p>A modern, full-stack job board web application built explicitly for software engineering students and early-career tech professionals.</p>
+  <p>A production-ready, high-fidelity full-stack job board web application built with next-generation technologies for recruiters and tech candidates.</p>
 
   <!-- Badges -->
   <a href="https://github.com/codezelaca/fs-job-board-next-js-webapp">
     <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github" alt="GitHub Repo" />
   </a>
-  <img src="https://img.shields.io/badge/Next.js-16.1-black?style=flat-square&logo=next.js" alt="Next.js" />
-  <img src="https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/Next.js-15.x-black?style=flat-square&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="TailwindCSS" />
+  <img src="https://img.shields.io/badge/Prisma_ORM-6.x-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma ORM" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </div>
 
 <br/>
 
-## ✨ Features
+## 🌟 Key Product Features
 
-- **Modern & Responsive UI**: Beautifully designed interface with purple styling, glassmorphic effects, and fluid animations built exclusively with Tailwind CSS v4.
-- **Advanced Job Filtering & Pagination**: Search jobs by keyword (title, skills, company), filter dynamically by remote vs. onsite locations, and filter by job types (Internship, Co-op, Full-time). URL-synced search parameters allow shareable filtered links.
-- **Interactive "Apply Now" Modal**: A highly polished, client-validated popup form to submit applications natively from the individual job detail view, supporting Full Name, Email, LinkedIn, Portfolio links, and Cover Letters securely.
-- **React Suspense Lazy Loading**: Implements Next.js streaming architecture with native `loading.tsx` custom skeletons (matching component structures identically instead of jarring visual jumps) for both the featured listings and detailed pages.
-- **Tailored Error Handling**: 
-  - Dynamic 404 Missing States (`app/jobs/[id]/not-found.tsx`) that politely indicate when a specific job post has been filled or removed.
-  - Global `app/not-found.tsx` for general broken routes.
-- **Internal APIs Backend**: Fully developed Next.js Route Handlers (`app/api/jobs`, `app/api/jobs/[id]`, `app/api/apply`) mocking an architectural backend standard for easy external database/CMS dropping later.
+### 1. Robust Role-Based Authentication & Guardrails (Auth.js v5)
+- **Role-Based Workspaces:** Automatic, precise routing for **Recruiters**, **Candidates** (`JOB_SEEKER`), and **Administrators** (`ADMIN`).
+- **Dynamic Onboarding Engine:** Detects uncompleted onboarding records upon successful login and redirects recruiters and candidates to personalized, validated onboarding steps before granting workspace access.
+- **Strict Route Protection:** Integrated Next.js Middleware chains protect candidate workspaces (`/candidate-dashboard/*`), recruiter panels (`/recruiter-dashboard/*`), and admin views (`/admin/*`) from unauthorized access, bouncing users to home or login pages.
 
-## 🛠 Tech Stack
+### 2. Immersive Recruiter Portal (`/recruiter-dashboard`)
+- **Bento Stats Dashboard:** Fetches live, user-scoped metrics from the database (Active Jobs, Drafts, Closed Listings, and Total Applications).
+- **Recent Applications Quick Links:** Showcases the latest 5 incoming applications on the home screen, deep-linked to instantly pre-filter the Applications Pool.
+- **Advanced Job Management:** Create, save as draft, edit, publish, or close listings. Editing is strictly isolated so recruiters can only access their own jobs.
+- **Dynamic Applications Pool:** Search candidates by name/email, filter by job listings, and filter by status (PENDING, ACCEPTED, REJECTED) with clean server-driven pagination.
+- **Candidate Review Popup:** Click "Review" on any candidate to instantly view their core info, cover letter, skills as tag-pills, biography, LinkedIn/portfolio links, and shortlist or reject them in real-time.
+
+### 3. Dynamic Candidate Hub (`/candidate-dashboard`)
+- **Bento Stats Tracking:** Live statistics for Total Applications, Applications In Review, and Hired Successes.
+- **Smart Job Applications:** The public job board's **"Apply Now"** modal automatically locks for guests and recruiters. When a logged-in candidate applies, their name and email are pre-filled uneditably, and their onboarding **resume PDF link is automatically linked** to save time.
+- **Applications Timeline:** Review and track past application outcomes, including links to view original job listings.
+- **Live Profile Showcase:** A summary dashboard sidebar displaying your professional Bio, registered Skills tags, and resume links.
+
+### 4. Custom Profile & Security Workspace (`/settings`)
+- **Recruiter Profile Settings:** Modify name, company website URL, and long-form company descriptions.
+- **Candidate Profile Settings:** Customize bio, resume PDF location, and input skills as comma-separated tags (instantly parsed and array-registered).
+- **Cryptographic Password Resets:** Fully secure password reset form that verifies the user's current password using `bcrypt` before applying the new one.
+
+---
+
+## 🛠 Advanced Tech Stack
 
 - **Framework**: [Next.js (App Router)](https://nextjs.org/)
-- **Library**: [React 19](https://react.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Core Library**: [React 19](https://react.dev/)
+- **Authentication**: [Auth.js v5 (NextAuth)](https://authjs.dev/)
+- **Database Engine**: [Prisma ORM](https://www.prisma.io/) with PostgreSQL database adapter
+- **Security**: Cryptographic hashing via `bcryptjs`
+- **Language**: [TypeScript](https://www.typescriptlang.org/) for complete type-safety
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with a curated dark-mode and glassmorphic palette
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Linter**: ESLint with custom configurations.
+
+---
 
 ## 📂 Project Structure
 
 ```text
 ├── app/
-│   ├── api/                  # Backend Route Handlers (/api/jobs, /api/apply)
-│   ├── jobs/                 
-│   │   ├── (list)/           # Route group isolating the job board view and its skeleton
-│   │   │   ├── page.tsx      # Main job board search interface
-│   │   │   └── loading.tsx   # Jobs board specific skeleton loader
-│   │   └── [id]/             # Dynamic individual job detailed view segment
-│   │       ├── page.tsx      
-│   │       ├── loading.tsx   # Detailed job specific skeleton loader
-│   │       └── not-found.tsx # "Job Expired" dedicated 404 UI
-│   ├── globals.css           # Global Tailwind initializations
-│   ├── layout.tsx            # Global application root layout
-│   ├── not-found.tsx         # Global 404 fallback
-│   └── page.tsx              # SEO optimized Landing/Home Page with Lazy loaded Featured sections
-├── components/               # Resusable React UI elements (JobCard, JobFilters, ApplyModal)
-├── data/                     # Mock data arrays representing a database layer
-├── lib/                      # Backend Data Access helpers (getAllJobs, getJobById)
-└── types/                    # TypeScript Interfaces (`Job`, forms, etc.)
+│   ├── (auth)/               # Login, Signup, Reset Password, Forgot Password
+│   ├── (public)/             # Main Job Board, Landing Page, Job Details
+│   ├── api/                  # Secure backend routes (/api/apply, NextAuth routing)
+│   ├── recruiter-dashboard/  # Recruiter metrics, job publishing, applications pool
+│   ├── candidate-dashboard/  # Candidate tracking panel, active metrics
+│   ├── onboarding/           # Onboarding paths for recruiter & candidate profile setup
+│   ├── globals.css           # Styling directives
+│   └── layout.tsx            # Global layout with Theme Providers & Auth Sessions
+├── components/               # Shareable components (Headers, Modals, Forms, Bento cards)
+├── lib/                      # Shared helper actions, prisma instance
+│   └── actions/              # Secure Server Actions (auth, settings, applications, jobs)
+├── prisma/                   # DB Schemas, migrations, and seed scripts
+└── types/                    # TypeScript interfaces
 ```
+
+---
+
+## 🔑 Initial Demo Accounts (Database Seeding)
+
+During initial database seeding, these high-fidelity demonstration accounts are populated for testing the workflows:
+
+### 1. System Administrator
+- **Email:** `info@codezela.com`
+- **Password:** `123456Codezela`
+- **Role:** `ADMIN`
+
+### 2. Demonstration Recruiter
+- **Email:** `recruiter@codezela.com`
+- **Password:** `password123`
+- **Role:** `RECRUITER`
+- **Company:** `Codezela Technologies`
+
+### 3. Demonstration Candidate
+- **Email:** `candidate@codezela.com`
+- **Password:** `password123`
+- **Role:** `JOB_SEEKER`
+- **Skills:** React, Next.js, Node.js, TypeScript
+
+---
 
 ## 🚀 Getting Started
 
-To get a local copy up and running, follow these simple steps.
+Follow these steps to configure your local workspace:
 
-### Prerequisites
+### 1. Set Up Environment Variables
+Create a `.env` file in the root of the project:
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/fs_job_board"
+AUTH_SECRET="your-super-secret-auth-key"
+```
 
-Ensure you have Node.js installed implicitly via npm or yarn.
+### 2. Initialize Database & Seed
+Run Prisma migrations and seed the initial users into your PostgreSQL database:
+```bash
+# Install dependencies
+npm install
 
-### Installation
+# Run database migrations
+npx prisma migrate dev
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/codezelaca/fs-job-board-next-js-webapp.git
-   ```
-2. Navigate into the project directory:
-   ```bash
-   cd fs-job-board-next-js-webapp
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-5. Open up your browser and navigate to `http://localhost:3000`.
+# Seed demonstration accounts
+npx prisma db seed
+```
 
-## 🌐 API Reference
-
-For testing application integrations standalone, this project exposes these internal mock endpoints:
-
-- `GET /api/jobs`: Returns a paginated list of all active jobs. Supports search queries `?q=`, `?location=`, `?type=`, `?page=`, `?limit=`.
-- `GET /api/jobs/:id`: Returns detailed JSON data regarding a highly specific job ID.
-- `POST /api/apply`: Accepts application submissions. Validates `fullName`, `email`, `linkedInUrl`, and `coverLetter`. Returns `201 Created` upon successful server-side check.
+### 3. Start Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to explore the job board.
 
 ---
-_Designed and developed natively for the modern tech-recruiting era._
+_Designed and engineered natively for the modern, high-integrity tech recruiting era._
