@@ -7,6 +7,8 @@ import { Plus, Briefcase } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { JobStatus, JobType, Prisma } from "@prisma/client";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Manage Jobs | CCA Recruiter",
@@ -35,7 +37,7 @@ const SORT_FIELDS: Record<string, keyof Prisma.JobOrderByWithRelationInput> = {
 
 // ─── Data Fetching ─────────────────────────────────────────────────────────
 
-async function getPageData(params: SearchParams) {
+async function getPageData(params: SearchParams, recruiterId: string) {
   const q = params.q?.trim() ?? "";
   const status = params.status as JobStatus | undefined;
   const jobType = params.jobType as JobType | undefined;
@@ -45,7 +47,9 @@ async function getPageData(params: SearchParams) {
   const limit = Math.min(50, Math.max(5, parseInt(params.limit ?? "10", 10)));
 
   // Build WHERE clause
-  const where: Prisma.JobWhereInput = {};
+  const where: Prisma.JobWhereInput = {
+    recruiterId,
+  };
 
   if (q) {
     where.OR = [
@@ -78,9 +82,10 @@ async function getPageData(params: SearchParams) {
       skip: (page - 1) * limit,
       take: limit,
     }),
-    // Status group counts for summary cards (full dataset, no filters)
+    // Status group counts for summary cards (only for this recruiter)
     prisma.job.groupBy({
       by: ["status"],
+      where: { recruiterId },
       _count: { _all: true },
     }),
   ]);
@@ -141,6 +146,19 @@ export default async function ManageJobsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const session = await auth();
+  if (!session || session.user.role !== "RECRUITER") {
+    redirect("/login");
+  }
+
+  const recruiter = await prisma.recruiter.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  if (!recruiter) {
+    redirect("/onboarding/recruiter");
+  }
+
   const params = await searchParams;
   const {
     jobs,
@@ -151,7 +169,7 @@ export default async function ManageJobsPage({
     sortField,
     sortOrder,
     statusCounts,
-  } = await getPageData(params);
+  } = await getPageData(params, recruiter.id);
 
   const summaryCards = [
     { label: "Total Jobs", value: statusCounts.TOTAL, color: "text-zinc-900 dark:text-zinc-50", accent: "text-zinc-500 dark:text-zinc-400" },

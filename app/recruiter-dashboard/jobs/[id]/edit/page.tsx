@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import PostJobForm from "@/components/recruiter/PostJobForm";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/auth";
 
 export default async function EditJobPage({
   params,
@@ -11,17 +12,26 @@ export default async function EditJobPage({
 }) {
   const { id } = await params;
 
+  const session = await auth();
+  if (!session || session.user.role !== "RECRUITER") {
+    redirect("/login");
+  }
+
   // Fetch job and categories in parallel
   const [job, categories] = await Promise.all([
     prisma.job.findUnique({
       where: { id },
-      include: { category: true },
+      include: { category: true, recruiter: true },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!job) {
     notFound();
+  }
+
+  if (job.recruiter.userId !== session.user.id) {
+    redirect("/recruiter-dashboard/jobs"); // Or unauthorized page
   }
 
   return (

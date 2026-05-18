@@ -16,8 +16,17 @@ export async function signupUser(formData: FormData) {
       return { error: "All fields are required." };
     }
 
-    if (password.length < 8) {
-      return { error: "Password must be at least 8 characters long." };
+    if (name.length > 50) {
+      return { error: "Name is too long." };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 100) {
+      return { error: "Invalid email format." };
+    }
+
+    if (password.length < 8 || password.length > 100) {
+      return { error: "Password must be between 8 and 100 characters long." };
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -50,7 +59,8 @@ export async function signupUser(formData: FormData) {
 export async function forgotPassword(formData: FormData) {
   try {
     const email = formData.get("email") as string;
-    if (!email) return { error: "Email is required." };
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email) || email.length > 100) return { error: "A valid email is required." };
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -92,8 +102,8 @@ export async function resetPassword(formData: FormData) {
       return { error: "Missing required fields." };
     }
 
-    if (password.length < 8) {
-      return { error: "Password must be at least 8 characters long." };
+    if (password.length < 8 || password.length > 100) {
+      return { error: "Password must be between 8 and 100 characters long." };
     }
 
     const resetRecord = await prisma.passwordResetToken.findUnique({

@@ -18,6 +18,17 @@ export async function submitRecruiterOnboarding(formData: FormData) {
       return { error: "Company Name and About Company are required." };
     }
 
+    if (companyName.length > 100) return { error: "Company Name is too long." };
+    if (aboutCompany.length < 50 || aboutCompany.length > 2000) return { error: "About Company must be between 50 and 2000 characters." };
+    
+    if (companyWebsite) {
+      try {
+        new URL(companyWebsite);
+      } catch {
+        return { error: "Invalid website URL." };
+      }
+    }
+
     // Create recruiter profile
     await prisma.recruiter.create({
       data: {
@@ -58,6 +69,17 @@ export async function submitCandidateOnboarding(formData: FormData) {
 
     if (!bio || skills.length === 0) {
       return { error: "Bio and at least one skill are required." };
+    }
+
+    if (bio.length < 50 || bio.length > 2000) return { error: "Bio must be between 50 and 2000 characters." };
+    if (skills.length > 20) return { error: "You can specify a maximum of 20 skills." };
+    
+    if (resumeUrl) {
+      try {
+        new URL(resumeUrl);
+      } catch {
+        return { error: "Invalid resume URL." };
+      }
     }
 
     // Create candidate profile
