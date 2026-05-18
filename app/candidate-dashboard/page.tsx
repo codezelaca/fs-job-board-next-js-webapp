@@ -14,6 +14,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import CandidateApplicationsList from "@/components/candidate/CandidateApplicationsList";
 
 export default async function CandidateDashboardPage() {
   const session = await auth();
@@ -67,6 +68,12 @@ export default async function CandidateDashboardPage() {
       },
     }),
   ]);
+
+  const serializableApplications = applications.map((app) => ({
+    ...app,
+    createdAt: app.createdAt.toISOString(),
+    interviewDate: app.interviewDate ? app.interviewDate.toISOString() : null,
+  }));
 
   return (
     <div className="container mx-auto px-4 xl:px-8 py-8 md:py-12 max-w-7xl">
@@ -138,81 +145,7 @@ export default async function CandidateDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Left Column: Applications list (2/3 width) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Applications Submitted</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Review the active progress of your candidate profile.</p>
-              </div>
-            </div>
-
-            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {applications.length > 0 ? (
-                applications.map((app) => {
-                  const companyInitials = app.job.recruiter.companyName
-                    ? app.job.recruiter.companyName.substring(0, 2).toUpperCase()
-                    : "CO";
-                  
-                  const appliedDate = new Date(app.createdAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  });
-
-                  return (
-                    <div key={app.id} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm text-zinc-700 dark:text-zinc-300 shrink-0">
-                          {companyInitials}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {app.job.title}
-                          </h4>
-                          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{app.job.recruiter.companyName}</p>
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" /> Applied on {appliedDate}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                          app.status === "PENDING"
-                            ? "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
-                            : app.status === "ACCEPTED"
-                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-                              : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                        }`}>
-                          {app.status === "PENDING" ? "In Review" : app.status === "ACCEPTED" ? "Accepted" : "Rejected"}
-                        </span>
-                        
-                        <Link 
-                          href={`/jobs/${app.job.slug}`}
-                          className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors"
-                          title="View Job Details"
-                        >
-                          <ArrowUpRight className="w-4 h-4" />
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-12 text-center text-zinc-500 dark:text-zinc-400">
-                  <Briefcase className="w-10 h-10 mx-auto mb-3 opacity-25" />
-                  <p className="font-semibold text-zinc-900 dark:text-zinc-100">No applications yet</p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-6">Explore listings and apply to start tracking them here.</p>
-                  <Link 
-                    href="/jobs"
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-5 font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors text-sm"
-                  >
-                    Find Jobs
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+          <CandidateApplicationsList initialApplications={serializableApplications} />
         </div>
 
         {/* Right Column: Profile Summary & quick items (1/3 width) */}

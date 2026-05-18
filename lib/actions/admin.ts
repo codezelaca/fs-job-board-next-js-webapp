@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { Role } from "@prisma/client";
+import { Role, ApplicationStatus } from "@prisma/client";
+import { sendShortlistEmail, sendRejectionEmail } from "@/lib/email";
 
 // Guard helper to check if active user is an admin
 async function ensureAdmin() {
@@ -202,21 +203,98 @@ export async function adminUpdateSettings(formData: FormData) {
 
 export async function adminUpdateApplicationStatus(
   applicationId: string,
-  status: "ACCEPTED" | "REJECTED"
+  status: "ACCEPTED" | "REJECTED",
+  details?: {
+    rejectionReason?: string;
+    interviewDate?: string;
+    meetLink?: string;
+  }
 ) {
   try {
     await ensureAdmin();
 
+    // 1. Fetch the Application and related recruiter/job info
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        job: {
+          include: {
+            recruiter: true,
+          },
+        },
+        applicant: true,
+      },
+    });
+
+    if (!application) {
+      return { error: "Application not found." };
+    }
+
+    // 2. Validate response parameters
+    const updateData: any = { status: status as ApplicationStatus };
+
+    if (status === "ACCEPTED") {
+      if (!details?.interviewDate) {
+        return { error: "Interview date and time are required for shortlisting." };
+      }
+      if (!details?.meetLink || !details.meetLink.trim()) {
+        return { error: "A video interview meeting link is required." };
+      }
+
+      const parsedDate = new Date(details.interviewDate);
+      if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
+        return { error: "Interview date must be scheduled in the future." };
+      }
+
+      if (!/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(details.meetLink.trim())) {
+        return { error: "Please enter a valid meeting URL (starting with http:// or https://)." };
+      }
+
+      updateData.interviewDate = parsedDate;
+      updateData.meetLink = details.meetLink.trim();
+      updateData.rejectionReason = null;
+    } else {
+      updateData.rejectionReason = details?.rejectionReason?.trim() || null;
+      updateData.interviewDate = null;
+      updateData.meetLink = null;
+    }
+
+    // 3. Update DB
     await prisma.application.update({
       where: { id: applicationId },
-      data: { status },
+      data: updateData,
     });
+
+    // 4. Dispatch Email
+    const candidateName = application.applicant.name || "Candidate";
+    const candidateEmail = application.applicant.email;
+    const jobTitle = application.job.title;
+    const companyName = application.job.recruiter?.companyName || "CCA Client";
+
+    if (status === "ACCEPTED") {
+      await sendShortlistEmail({
+        candidateEmail,
+        candidateName,
+        jobTitle,
+        companyName,
+        interviewDate: details!.interviewDate!,
+        meetLink: details!.meetLink!.trim(),
+      });
+    } else {
+      await sendRejectionEmail({
+        candidateEmail,
+        candidateName,
+        jobTitle,
+        companyName,
+        rejectionReason: details?.rejectionReason?.trim() || undefined,
+      });
+    }
 
     revalidatePath("/admin-dashboard/applications");
     return { success: true };
   } catch (error: any) {
     console.error("[ADMIN_UPDATE_APP_STATUS_ERROR]", error);
-    return { error: "Failed to update application status." };
+    return { error: error.message || "Failed to update application status." };
   }
 }
 

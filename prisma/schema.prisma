@@ -135,6 +135,9 @@ model Application {
   linkedInUrl  String?
   portfolioUrl String?
   status       ApplicationStatus @default(PENDING)
+  rejectionReason String?
+  interviewDate   DateTime?
+  meetLink        String?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 }

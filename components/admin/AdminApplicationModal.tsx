@@ -11,7 +11,10 @@ import {
   AlertCircle, 
   Loader2,
   BookmarkCheck,
-  UserX
+  UserX,
+  Calendar,
+  Link as LinkIcon,
+  MessageSquare
 } from "lucide-react";
 import { adminUpdateApplicationStatus } from "@/lib/actions/admin";
 
@@ -51,23 +54,49 @@ export default function AdminApplicationModal({
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Sub-form state
+  const [activeSubForm, setActiveSubForm] = useState<null | "SHORTLIST" | "REJECT">(null);
+
+  // Form input fields
+  const [interviewDate, setInterviewDate] = useState("");
+  const [meetLink, setMeetLink] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+
   if (!isOpen) return null;
 
   const handleStatusChange = async (newStatus: "ACCEPTED" | "REJECTED") => {
     setError("");
     setSuccessMsg("");
 
+    // Validations
+    if (newStatus === "ACCEPTED") {
+      if (!interviewDate) {
+        setError("Please choose a valid interview date and time.");
+        return;
+      }
+      const parsedDate = new Date(interviewDate);
+      if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
+        setError("Interview date must be scheduled in the future.");
+        return;
+      }
+      if (!meetLink || !meetLink.trim()) {
+        setError("Please enter a meeting link for the interview.");
+        return;
+      }
+      if (!/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(meetLink.trim())) {
+        setError("Please enter a valid meeting URL (e.g. starting with http:// or https://).");
+        return;
+      }
+    }
+
     startTransition(async () => {
-      // Direct status updating (uses the common status changer which has recruiter checks,
-      // wait! We should create a separate admin action or bypass it. But since we want robust controls,
-      // let's verify if `updateApplicationStatus` supports admins. Ah! Let's check `updateApplicationStatus` in `lib/actions/applications.ts`!
-      // In `lib/actions/applications.ts` we have:
-      // if (!session || session.user.role !== "RECRUITER") { return { error: "Unauthorized." }; }
-      // Ah! That strictly blocks ADMINS from updating status! That is an incredible detail!
-      // So we MUST create a secure admin status updater in `lib/actions/admin.ts` or allow it!
-      // Let's create `adminUpdateApplicationStatus` inside `lib/actions/admin.ts`!
-      // But first, let's write the AdminApplicationModal code using `adminUpdateApplicationStatus`!
-      const res = await adminUpdateApplicationStatus(application.id, newStatus);
+      const payload = {
+        rejectionReason: newStatus === "REJECTED" ? rejectionReason.trim() : undefined,
+        interviewDate: newStatus === "ACCEPTED" ? interviewDate : undefined,
+        meetLink: newStatus === "ACCEPTED" ? meetLink.trim() : undefined,
+      };
+
+      const res = await adminUpdateApplicationStatus(application.id, newStatus, payload);
       if (res?.error) {
         setError(res.error);
       } else {
@@ -76,6 +105,7 @@ export default function AdminApplicationModal({
         setTimeout(() => {
           onClose();
           setSuccessMsg("");
+          setActiveSubForm(null);
         }, 1500);
       }
     });
@@ -94,12 +124,12 @@ export default function AdminApplicationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-zinc-955 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in zoom-in-95 duration-200">
         
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-650 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-650 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -136,7 +166,7 @@ export default function AdminApplicationModal({
 
           {/* Feedback */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/10 border border-red-200 dark:border-red-900/30 rounded-2xl flex items-start gap-3 text-red-600 dark:text-red-400 animate-in fade-in duration-150">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/10 border border-red-200 dark:border-red-900/30 rounded-2xl flex items-start gap-3 text-red-650 dark:text-red-400 animate-in fade-in duration-150">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <p className="text-sm font-semibold">{error}</p>
             </div>
@@ -195,7 +225,7 @@ export default function AdminApplicationModal({
                     href={application.resumeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 h-10 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/30 bg-zinc-50 dark:bg-zinc-900 hover:bg-red-50/20 text-sm font-semibold rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-400 transition-all shadow-sm"
+                    className="inline-flex w-full items-center justify-center gap-2 h-10 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/30 bg-zinc-50 dark:bg-zinc-900 hover:bg-red-50/20 text-sm font-semibold rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-red-650 dark:hover:text-red-400 transition-all shadow-sm"
                   >
                     <FileText className="w-4 h-4" />
                     Download Resume
@@ -209,7 +239,7 @@ export default function AdminApplicationModal({
                     rel="noopener noreferrer"
                     className="inline-flex w-full items-center justify-center gap-2 h-10 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/30 bg-zinc-50 dark:bg-zinc-900 hover:bg-red-50/20 text-sm font-semibold rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-red-650 dark:hover:text-red-400 transition-all shadow-sm"
                   >
-                    <Linkedin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <Linkedin className="w-4 h-4 text-blue-650 dark:text-blue-400" />
                     LinkedIn Profile
                   </a>
                 )}
@@ -221,7 +251,7 @@ export default function AdminApplicationModal({
                     rel="noopener noreferrer"
                     className="inline-flex w-full items-center justify-center gap-2 h-10 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/30 bg-zinc-50 dark:bg-zinc-900 hover:bg-red-50/20 text-sm font-semibold rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-red-650 dark:hover:text-red-400 transition-all shadow-sm"
                   >
-                    <Globe className="w-4 h-4 text-zinc-500" />
+                    <Globe className="w-4 h-4 text-zinc-555" />
                     Portfolio / GitHub
                   </a>
                 )}
@@ -231,36 +261,125 @@ export default function AdminApplicationModal({
 
           {/* Action buttons (only for PENDING applications) */}
           {application.status === "PENDING" && (
-            <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-zinc-100 dark:border-zinc-800 mt-8">
-              <button
-                onClick={() => handleStatusChange("REJECTED")}
-                disabled={isPending}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 px-6 font-semibold text-sm transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
+            <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800 mt-8">
+              
+              {/* Secondary sub forms */}
+              {activeSubForm === "SHORTLIST" ? (
+                <div className="bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-850 p-6 rounded-2xl space-y-4 animate-in slide-in-from-bottom duration-250">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-650 dark:text-red-400 flex items-center gap-1.5">
+                    <BookmarkCheck className="w-4 h-4" /> Admin Shortlisting & Scheduling Specifications
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase mb-1 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" /> Date & Time (Future)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={interviewDate}
+                        onChange={(e) => setInterviewDate(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-red-650/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase mb-1 flex items-center gap-1">
+                        <LinkIcon className="w-3.5 h-3.5" /> Meeting Link (Google Meet / Video Link)
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="e.g. https://meet.google.com/abc-defg-hij"
+                        value={meetLink}
+                        onChange={(e) => setMeetLink(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-red-650/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSubForm(null);
+                        setError("");
+                      }}
+                      className="h-10 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange("ACCEPTED")}
+                      disabled={isPending}
+                      className="h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-semibold text-white shadow-md shadow-red-500/10 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      Confirm & Schedule Interview
+                    </button>
+                  </div>
+                </div>
+              ) : activeSubForm === "REJECT" ? (
+                <div className="bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-850 p-6 rounded-2xl space-y-4 animate-in slide-in-from-bottom duration-250">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-650 dark:text-red-400 flex items-center gap-1.5">
+                    <UserX className="w-4 h-4" /> Admin Rejection Specifications
+                  </h4>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase mb-1.5 flex items-center gap-1">
+                      <MessageSquare className="w-3.5 h-3.5" /> Rejection Feedback Reason (Optional)
+                    </label>
+                    <textarea
+                      placeholder="e.g. Thank you for your application, however we require more experience in React and Node.js..."
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-red-650/50"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSubForm(null);
+                        setError("");
+                      }}
+                      className="h-10 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange("REJECTED")}
+                      disabled={isPending}
+                      className="h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-semibold text-white shadow-md shadow-red-500/10 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      Confirm Rejection
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    onClick={() => setActiveSubForm("REJECT")}
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 px-6 font-semibold text-sm transition-all cursor-pointer"
+                  >
                     <UserX className="w-4 h-4 mr-2" />
                     Reject Candidate
-                  </>
-                )}
-              </button>
-              
-              <button
-                onClick={() => handleStatusChange("ACCEPTED")}
-                disabled={isPending}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-6 font-semibold text-white shadow-lg shadow-red-500/10 hover:shadow-red-500/20 hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
-              >
-                {isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveSubForm("SHORTLIST")}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-red-650 px-6 font-semibold text-white shadow-lg shadow-red-555 transition-all text-sm cursor-pointer"
+                  >
                     <BookmarkCheck className="w-4 h-4 mr-2" />
                     Shortlist Candidate
-                  </>
-                )}
-              </button>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

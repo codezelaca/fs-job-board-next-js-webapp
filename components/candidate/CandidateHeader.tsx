@@ -69,14 +69,6 @@ export default function CandidateHeader() {
                   </div>
                   <div className="py-1">
                     <Link 
-                      href="/jobs" 
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      <Briefcase className="w-4 h-4" />
-                      Browse Jobs
-                    </Link>
-                    <Link 
                       href="/candidate-dashboard/settings" 
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
