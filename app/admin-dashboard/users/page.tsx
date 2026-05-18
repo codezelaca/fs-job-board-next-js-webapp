@@ -52,6 +52,10 @@ export default async function AdminUsersPage(props: {
     prisma.user.count({ where: whereClause }),
     prisma.user.findMany({
       where: whereClause,
+      include: {
+        recruiter: true,
+        candidate: true,
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,

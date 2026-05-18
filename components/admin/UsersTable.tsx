@@ -4,6 +4,8 @@ import { useState, useTransition, useEffect } from "react";
 import { UserCheck, Trash2, Key, Edit, ShieldAlert, AlertCircle, Check, Loader2 } from "lucide-react";
 import UserEditModal from "./UserEditModal";
 import PasswordResetModal from "./PasswordResetModal";
+import UserProfileModal from "./UserProfileModal";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { adminDeleteUser } from "@/lib/actions/admin";
 
 interface UserRow {
@@ -12,6 +14,14 @@ interface UserRow {
   email: string;
   role: string;
   createdAt: string;
+  recruiter?: {
+    companyName: string;
+  } | null;
+  candidate?: {
+    bio: string | null;
+    skills: string[];
+    resumeUrl?: string | null;
+  } | null;
 }
 
 interface UsersTableProps {
@@ -24,42 +34,41 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
   // Modals state
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [resettingUser, setResettingUser] = useState<UserRow | null>(null);
+  const [viewingUser, setViewingUser] = useState<UserRow | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
 
   // Deletion state
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Synchronize when server updates props
   useEffect(() => {
     setUsers(initialUsers);
   }, [initialUsers]);
 
-  const handleUpdate = (userId: string, newName: string, newRole: "RECRUITER" | "JOB_SEEKER" | "ADMIN") => {
+  const handleUpdate = (userId: string, newName: string, newRole: "RECRUITER" | "JOB_SEEKER") => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, name: newName, role: newRole } : u))
     );
   };
 
-  const handleDelete = (userId: string) => {
-    if (!confirm("Are you absolutely sure you want to permanently delete this user account? This action will purge all their listings, profiles, and applications immediately.")) {
-      return;
-    }
+  const handleDeleteConfirm = () => {
+    if (!deletingUser) return;
+    const userId = deletingUser.id;
 
     setError("");
     setSuccess("");
-    setDeletingId(userId);
 
     startTransition(async () => {
       const res = await adminDeleteUser(userId);
       if (res?.error) {
         setError(res.error);
-        setDeletingId(null);
+        setDeletingUser(null);
       } else {
         setSuccess("User deleted successfully.");
         setUsers((prev) => prev.filter((u) => u.id !== userId));
-        setDeletingId(null);
+        setDeletingUser(null);
         setTimeout(() => setSuccess(""), 1500);
       }
     });
@@ -115,7 +124,12 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
                             {initials}
                           </div>
                           <div>
-                            <p className="font-semibold text-zinc-900 dark:text-zinc-50">{user.name || "N/A"}</p>
+                            <button
+                              onClick={() => setViewingUser(user)}
+                              className="font-semibold text-zinc-900 dark:text-zinc-50 hover:text-red-650 dark:hover:text-red-400 hover:underline transition-all text-left cursor-pointer"
+                            >
+                              {user.name || "N/A"}
+                            </button>
                             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{user.email}</p>
                           </div>
                         </div>
@@ -159,12 +173,12 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
                           </button>
 
                           <button
-                            onClick={() => handleDelete(user.id)}
-                            disabled={deletingId === user.id}
+                            onClick={() => setDeletingUser(user)}
+                            disabled={isPending && deletingUser?.id === user.id}
                             title="Delete User Account"
                             className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-650 hover:text-red-600 hover:border-red-500/30 transition-all cursor-pointer shadow-sm disabled:opacity-50"
                           >
-                            {deletingId === user.id ? (
+                            {isPending && deletingUser?.id === user.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
                               <Trash2 className="w-3.5 h-3.5" />
@@ -207,6 +221,27 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
           isOpen={!!resettingUser}
           onClose={() => setResettingUser(null)}
           user={resettingUser}
+        />
+      )}
+
+      {/* Profile Details Popover Modal */}
+      {viewingUser && (
+        <UserProfileModal
+          isOpen={!!viewingUser}
+          onClose={() => setViewingUser(null)}
+          user={viewingUser}
+        />
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {deletingUser && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingUser}
+          onClose={() => setDeletingUser(null)}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Platform Account"
+          message={`Are you completely sure you want to permanently delete the account for ${deletingUser.name || deletingUser.email}? This action will permanently purge all their job listings, recruiter logs, skills listings, and applicant data immediately.`}
+          isPending={isPending}
         />
       )}
     </div>

@@ -46,21 +46,46 @@ export default async function AdminJobsPage(props: {
     whereClause.status = status as JobStatus;
   }
 
-  // 3. Parallel DB count & fetch
-  const [totalItems, dbJobs] = await Promise.all([
+  // 3. Parallel DB count, fetch, recruiters & categories
+  const [totalItems, dbJobs, recruiters, categories] = await Promise.all([
     prisma.job.count({ where: whereClause }),
     prisma.job.findMany({
       where: whereClause,
       include: {
         recruiter: {
           select: {
+            id: true,
             companyName: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
+    }),
+    prisma.recruiter.findMany({
+      select: {
+        id: true,
+        companyName: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    }),
+    prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
     }),
   ]);
 
@@ -154,7 +179,7 @@ export default async function AdminJobsPage(props: {
       </form>
 
       {/* Interactive Jobs Table */}
-      <JobsTable initialJobs={serializableJobs} />
+      <JobsTable initialJobs={serializableJobs} recruiters={recruiters} categories={categories} />
 
       {/* Pagination Controls */}
       {totalPages > 1 && (

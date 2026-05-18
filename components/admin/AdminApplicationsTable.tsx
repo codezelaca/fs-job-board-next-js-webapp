@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowUpRight, Calendar, Briefcase, Clock } from "lucide-react";
+import { ArrowUpRight, Calendar, Briefcase, Clock, Eye } from "lucide-react";
 import AdminApplicationModal from "./AdminApplicationModal";
+import JobDetailSidePanel from "./JobDetailSidePanel";
 
 interface ApplicationRow {
   id: string;
@@ -13,7 +14,22 @@ interface ApplicationRow {
   status: string;
   createdAt: string;
   job: {
+    id: string;
     title: string;
+    location: string | null;
+    locationType: string;
+    jobType: string;
+    salaryMin: number | null;
+    salaryMax: number | null;
+    about: string;
+    term: string;
+    skills: string[];
+    responsibilities: string[];
+    requirements: string[];
+    createdAt: string;
+    recruiter?: {
+      companyName: string;
+    } | null;
   };
   applicant: {
     name: string | null;
@@ -32,6 +48,9 @@ interface AdminApplicationsTableProps {
 export default function AdminApplicationsTable({ initialApplications }: AdminApplicationsTableProps) {
   const [applications, setApplications] = useState<ApplicationRow[]>(initialApplications);
   const [selectedApplication, setSelectedApplication] = useState<ApplicationRow | null>(null);
+  
+  // Side Panel state for applied job specifications
+  const [viewingJob, setViewingJob] = useState<any | null>(null);
 
   // Sync internal state when server props update
   useEffect(() => {
@@ -51,7 +70,7 @@ export default function AdminApplicationsTable({ initialApplications }: AdminApp
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               <th className="p-5 font-semibold">Candidate</th>
-              <th className="p-5 font-semibold">Role Applied</th>
+              <th className="p-5 font-semibold">Applied Job (Click for specs)</th>
               <th className="p-5 font-semibold">Date Applied</th>
               <th className="p-5 font-semibold">Status</th>
               <th className="p-5 text-right font-semibold">Review</th>
@@ -88,12 +107,16 @@ export default function AdminApplicationsTable({ initialApplications }: AdminApp
                       </div>
                     </td>
 
-                    {/* Role Applied */}
+                    {/* Role Applied (Clickable to show Side Panel) */}
                     <td className="p-5">
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-zinc-400" />
-                        <span className="font-medium text-zinc-700 dark:text-zinc-300">{app.job.title}</span>
-                      </div>
+                      <button
+                        onClick={() => setViewingJob(app.job)}
+                        className="inline-flex items-center gap-2 group/btn font-semibold text-zinc-800 dark:text-zinc-200 hover:text-red-650 dark:hover:text-red-400 hover:underline transition-all text-left cursor-pointer"
+                        title="View Job Details Side Panel"
+                      >
+                        <Briefcase className="w-4 h-4 text-zinc-400 group-hover/btn:text-red-650 dark:group-hover/btn:text-red-400 transition-colors" />
+                        <span>{app.job.title}</span>
+                      </button>
                     </td>
 
                     {/* Date Applied */}
@@ -152,6 +175,15 @@ export default function AdminApplicationsTable({ initialApplications }: AdminApp
           onClose={() => setSelectedApplication(null)}
           application={selectedApplication}
           onStatusUpdated={(newStatus) => handleStatusUpdated(selectedApplication.id, newStatus)}
+        />
+      )}
+
+      {/* Applied Job Specification Side Panel */}
+      {viewingJob && (
+        <JobDetailSidePanel
+          isOpen={!!viewingJob}
+          onClose={() => setViewingJob(null)}
+          job={viewingJob}
         />
       )}
     </div>

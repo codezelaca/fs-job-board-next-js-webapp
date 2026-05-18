@@ -18,7 +18,13 @@ async function ensureAdmin() {
 export async function adminUpdateUser(
   userId: string,
   name: string,
-  role: "RECRUITER" | "JOB_SEEKER" | "ADMIN"
+  role: "RECRUITER" | "JOB_SEEKER",
+  extraData?: {
+    companyName?: string;
+    bio?: string;
+    skills?: string;
+    resumeUrl?: string;
+  }
 ) {
   try {
     await ensureAdmin();
@@ -27,13 +33,45 @@ export async function adminUpdateUser(
       return { error: "Name must be between 2 and 50 characters." };
     }
 
-    // Update inside Prisma
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name,
-        role: role as Role,
-      },
+    // Wrap in a transaction to ensure role and profile details are saved together
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          role: role as Role,
+        },
+      });
+
+      if (role === "RECRUITER") {
+        if (!extraData?.companyName || extraData.companyName.trim().length < 2) {
+          throw new Error("Company name is required to transition to Recruiter role.");
+        }
+        await tx.recruiter.upsert({
+          where: { userId },
+          update: { companyName: extraData.companyName },
+          create: { userId, companyName: extraData.companyName },
+        });
+      } else if (role === "JOB_SEEKER") {
+        const skillsArray = extraData?.skills
+          ? extraData.skills.split(",").map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+          : [];
+
+        await tx.candidate.upsert({
+          where: { userId },
+          update: {
+            bio: extraData?.bio || null,
+            skills: skillsArray,
+            resumeUrl: extraData?.resumeUrl || null,
+          },
+          create: {
+            userId,
+            bio: extraData?.bio || null,
+            skills: skillsArray,
+            resumeUrl: extraData?.resumeUrl || null,
+          },
+        });
+      }
     });
 
     revalidatePath("/admin-dashboard/users");
@@ -179,5 +217,130 @@ export async function adminUpdateApplicationStatus(
   } catch (error: any) {
     console.error("[ADMIN_UPDATE_APP_STATUS_ERROR]", error);
     return { error: "Failed to update application status." };
+  }
+}
+
+export async function adminCreateJob(jobData: {
+  title: string;
+  location: string | null;
+  locationType: "ONSITE" | "HYBRID" | "REMOTE";
+  jobType: "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
+  salaryMin: number | null;
+  salaryMax: number | null;
+  about: string;
+  term: string;
+  recruiterId: string;
+  categoryId: string;
+  skills: string[];
+  responsibilities: string[];
+  requirements: string[];
+}) {
+  try {
+    await ensureAdmin();
+
+    if (!jobData.title || jobData.title.trim().length < 3) {
+      return { error: "Job title must be at least 3 characters long." };
+    }
+    if (!jobData.about || jobData.about.trim().length < 10) {
+      return { error: "Job description must be at least 10 characters long." };
+    }
+    if (!jobData.recruiterId) {
+      return { error: "A valid recruiter assignment is required." };
+    }
+    if (!jobData.categoryId) {
+      return { error: "A valid category selection is required." };
+    }
+
+    // Generate unique slug
+    const cleanTitle = jobData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    const slug = `${cleanTitle}-${randomSuffix}`;
+
+    await prisma.job.create({
+      data: {
+        slug,
+        title: jobData.title,
+        location: jobData.location,
+        locationType: jobData.locationType,
+        jobType: jobData.jobType,
+        salaryMin: jobData.salaryMin,
+        salaryMax: jobData.salaryMax,
+        about: jobData.about,
+        term: jobData.term || "Permanent",
+        skills: jobData.skills,
+        responsibilities: jobData.responsibilities,
+        requirements: jobData.requirements,
+        recruiterId: jobData.recruiterId,
+        categoryId: jobData.categoryId,
+        status: "PUBLISHED",
+      },
+    });
+
+    revalidatePath("/admin-dashboard/jobs");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[ADMIN_CREATE_JOB_ERROR]", error);
+    return { error: error.message || "Failed to create job posting." };
+  }
+}
+
+export async function adminUpdateJob(
+  jobId: string,
+  jobData: {
+    title: string;
+    location: string | null;
+    locationType: "ONSITE" | "HYBRID" | "REMOTE";
+    jobType: "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
+    salaryMin: number | null;
+    salaryMax: number | null;
+    about: string;
+    term: string;
+    recruiterId: string;
+    categoryId: string;
+    skills: string[];
+    responsibilities: string[];
+    requirements: string[];
+  }
+) {
+  try {
+    await ensureAdmin();
+
+    if (!jobData.title || jobData.title.trim().length < 3) {
+      return { error: "Job title must be at least 3 characters long." };
+    }
+    if (!jobData.about || jobData.about.trim().length < 10) {
+      return { error: "Job description must be at least 10 characters long." };
+    }
+    if (!jobData.recruiterId) {
+      return { error: "A valid recruiter assignment is required." };
+    }
+    if (!jobData.categoryId) {
+      return { error: "A valid category selection is required." };
+    }
+
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        title: jobData.title,
+        location: jobData.location,
+        locationType: jobData.locationType,
+        jobType: jobData.jobType,
+        salaryMin: jobData.salaryMin,
+        salaryMax: jobData.salaryMax,
+        about: jobData.about,
+        term: jobData.term,
+        skills: jobData.skills,
+        responsibilities: jobData.responsibilities,
+        requirements: jobData.requirements,
+        recruiterId: jobData.recruiterId,
+        categoryId: jobData.categoryId,
+      },
+    });
+
+    revalidatePath("/admin-dashboard/jobs");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[ADMIN_UPDATE_JOB_ERROR]", error);
+    return { error: error.message || "Failed to update job posting." };
   }
 }

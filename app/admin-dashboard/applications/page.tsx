@@ -55,7 +55,13 @@ export default async function AdminApplicationsPage(props: {
       where: whereClause,
       include: {
         job: {
-          select: { title: true },
+          include: {
+            recruiter: {
+              select: {
+                companyName: true,
+              },
+            },
+          },
         },
         applicant: {
           select: {
@@ -82,6 +88,12 @@ export default async function AdminApplicationsPage(props: {
   const serializableApplications = dbApplications.map((app) => ({
     ...app,
     createdAt: app.createdAt.toISOString(),
+    job: {
+      ...app.job,
+      createdAt: app.job.createdAt.toISOString(),
+      expiresAt: app.job.expiresAt ? app.job.expiresAt.toISOString() : null,
+      updatedAt: app.job.updatedAt.toISOString(),
+    },
   }));
 
   // Helper for generating query links
