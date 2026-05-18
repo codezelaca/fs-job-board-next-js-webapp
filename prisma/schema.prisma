@@ -40,12 +40,15 @@ enum ApplicationStatus {
 model User {
   id        String   @id @default(uuid())
   name      String?
-  email     String   @unique
-  role      Role     @default(JOB_SEEKER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  email               String   @unique
+  passwordHash        String?
+  role                Role     @default(JOB_SEEKER)
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   recruiter    Recruiter?
+  candidate    Candidate?
   applications Application[]
 }
 
@@ -61,6 +64,27 @@ model Recruiter {
   updatedAt      DateTime @updatedAt
 
   jobs Job[]
+}
+
+model Candidate {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio       String?
+  resumeUrl String?
+  skills    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
 }
 
 model Job {

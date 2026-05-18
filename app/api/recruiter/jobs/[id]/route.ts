@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { JobStatus, JobType, LocationType } from "@prisma/client";
 import { validateJobPayload } from "@/lib/validations/job";
+import { auth } from "@/auth";
 
 // ─── GET: Fetch single recruiter job ──────────────────────────────────────────
 
@@ -11,6 +12,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const session = await auth();
+    if (!session || session.user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const job = await prisma.job.findUnique({
       where: { id },
       include: {
@@ -22,6 +29,10 @@ export async function GET(
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    if (job.recruiter.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.json({
@@ -76,10 +87,23 @@ export async function PATCH(
     const salaryMin = (body.salaryMin !== "" && body.salaryMin != null) ? Number(body.salaryMin) : null;
     const salaryMax = (body.salaryMax !== "" && body.salaryMax != null) ? Number(body.salaryMax) : null;
 
-    // Verify job exists
-    const existingJob = await prisma.job.findUnique({ where: { id } });
+    const session = await auth();
+    if (!session || session.user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify job exists and belongs to user
+    const existingJob = await prisma.job.findUnique({ 
+      where: { id },
+      include: { recruiter: true }
+    });
+    
     if (!existingJob) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    if (existingJob.recruiter.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify category exists
@@ -132,10 +156,22 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    const session = await auth();
+    if (!session || session.user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Verify existence
-    const job = await prisma.job.findUnique({ where: { id } });
+    const job = await prisma.job.findUnique({ 
+      where: { id },
+      include: { recruiter: true }
+    });
     if (!job) {
       return NextResponse.json({ error: "Job already deleted or not found." }, { status: 404 });
+    }
+
+    if (job.recruiter.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.job.delete({ where: { id } });

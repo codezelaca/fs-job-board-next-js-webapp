@@ -2,12 +2,27 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { JobStatus, JobType, LocationType } from "@prisma/client";
 import { validateJobPayload } from "@/lib/validations/job";
+import { auth } from "@/auth";
 
 // ─── GET: list all recruiter jobs ────────────────────────────────────────────
 
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session || session.user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const recruiter = await prisma.recruiter.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!recruiter) {
+      return NextResponse.json({ error: "Recruiter profile not found" }, { status: 404 });
+    }
+
     const jobs = await prisma.job.findMany({
+      where: { recruiterId: recruiter.id },
       include: {
         recruiter: true,
         category: true,
@@ -92,8 +107,16 @@ export async function POST(request: Request) {
       { errors: [{ field: "categoryId", message: "Selected category does not exist." }] }, { status: 422 }
     );
 
-    // Use first recruiter until auth is implemented
-    const recruiter = await prisma.recruiter.findFirst();
+    const session = await auth();
+    if (!session || session.user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the recruiter linked to the authenticated user
+    const recruiter = await prisma.recruiter.findUnique({
+      where: { userId: session.user.id }
+    });
+    
     if (!recruiter) return NextResponse.json(
       { error: "No recruiter account found. Please set up your recruiter profile first." }, { status: 403 }
     );

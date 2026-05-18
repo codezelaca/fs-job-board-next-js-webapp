@@ -3,6 +3,7 @@ import { PrismaClient, JobType, LocationType } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { jobs } from "../data/jobs";
+import bcrypt from "bcryptjs";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -36,14 +37,23 @@ async function main() {
     },
   });
 
+  // Hash passwords
+  const adminPassword = await bcrypt.hash("123456Codezela", 10);
+  const userPassword = await bcrypt.hash("password123", 10);
+
   // Create a default Admin
   await prisma.user.upsert({
-    where: { email: "admin@cca-jobboard.com" },
-    update: {},
+    where: { email: "info@codezela.com" },
+    update: {
+      passwordHash: adminPassword,
+      onboardingCompleted: true,
+    },
     create: {
-      email: "admin@cca-jobboard.com",
+      email: "info@codezela.com",
       name: "CCA Admin",
       role: "ADMIN",
+      passwordHash: adminPassword,
+      onboardingCompleted: true,
     },
   });
 
@@ -54,11 +64,16 @@ async function main() {
     // Create user for recruiter
     const rUser = await prisma.user.upsert({
       where: { email: mockRecruiterUserId },
-      update: {},
+      update: {
+        passwordHash: userPassword,
+        onboardingCompleted: true,
+      },
       create: {
         email: mockRecruiterUserId,
         name: job.company,
         role: "RECRUITER",
+        passwordHash: userPassword,
+        onboardingCompleted: true,
       },
     });
 
@@ -94,6 +109,33 @@ async function main() {
       },
     });
   }
+
+  // Create a dummy candidate
+  const candidateEmail = "candidate@example.com";
+  const cUser = await prisma.user.upsert({
+    where: { email: candidateEmail },
+    update: {
+      passwordHash: userPassword,
+      onboardingCompleted: true,
+    },
+    create: {
+      email: candidateEmail,
+      name: "John Candidate",
+      role: "JOB_SEEKER",
+      passwordHash: userPassword,
+      onboardingCompleted: true,
+    },
+  });
+
+  await prisma.candidate.upsert({
+    where: { userId: cUser.id },
+    update: {},
+    create: {
+      userId: cUser.id,
+      bio: "I am a passionate software engineer looking for new opportunities.",
+      skills: ["React", "TypeScript", "Node.js"],
+    },
+  });
 
   console.log("Seeding complete!");
 }
