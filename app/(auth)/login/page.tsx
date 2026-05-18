@@ -35,8 +35,32 @@ export default function LoginPage() {
         setError("Invalid email or password.");
         setIsLoading(false);
       } else {
-        // Success: Let middleware handle the redirect based on role and onboarding status
-        router.push("/recruiter-dashboard"); // Trigger a navigation to root or protected route so middleware kicks in
+        // Fetch the session details to route the user correctly
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
+        
+        const role = session?.user?.role;
+        const onboardingCompleted = session?.user?.onboardingCompleted;
+
+        if (!onboardingCompleted) {
+          if (role === "RECRUITER") {
+            router.push("/onboarding/recruiter");
+          } else if (role === "JOB_SEEKER") {
+            router.push("/onboarding/candidate");
+          } else {
+            router.push("/");
+          }
+        } else {
+          if (role === "RECRUITER") {
+            router.push("/recruiter-dashboard");
+          } else if (role === "JOB_SEEKER") {
+            router.push("/candidate-dashboard");
+          } else if (role === "ADMIN") {
+            router.push("/admin-dashboard");
+          } else {
+            router.push("/");
+          }
+        }
         router.refresh();
       }
     } catch (err) {

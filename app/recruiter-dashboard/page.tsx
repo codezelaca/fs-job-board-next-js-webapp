@@ -57,11 +57,11 @@ export default async function RecruiterDashboardPage() {
     prisma.application.count({
       where: { job: { recruiterId: recruiter.id }, createdAt: { gte: startOfDay } },
     }),
-    // Recent 3 applications
+    // Recent 5 applications
     prisma.application.findMany({
       where: { job: { recruiterId: recruiter.id } },
       orderBy: { createdAt: "desc" },
-      take: 3,
+      take: 5,
       include: {
         applicant: true,
         job: true,
@@ -160,7 +160,11 @@ export default async function RecruiterDashboardPage() {
                     : `${Math.floor(diffHours / 24)}d ago`;
 
                 return (
-                  <div key={app.id} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex items-center justify-between group">
+                  <Link 
+                    key={app.id} 
+                    href={`/recruiter-dashboard/applications?q=${encodeURIComponent(app.applicant.email)}`}
+                    className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex items-center justify-between group cursor-pointer border-b last:border-0 border-zinc-100 dark:border-zinc-800"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
                         {initials}
@@ -176,11 +180,17 @@ export default async function RecruiterDashboardPage() {
                       <span className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center">
                         <Clock className="w-3 h-3 mr-1" /> {timeAgo}
                       </span>
-                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                        {app.status}
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        app.status === "PENDING"
+                          ? "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
+                          : app.status === "ACCEPTED"
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+                            : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                      }`}>
+                        {app.status === "PENDING" ? "In Review" : app.status === "ACCEPTED" ? "Shortlisted" : "Rejected"}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })
             ) : (
